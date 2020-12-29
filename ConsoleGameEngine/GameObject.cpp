@@ -2,55 +2,73 @@
 #include <map>
 #include <deque>
 
-#include "GameObject.h"
-#include "Frame.h"
+#include "SEngine.h"
+#include "Utils.h"
 
 using namespace std;
 
-//Object management
-map<string, GameObject> objects;
-list<string> objectsColection;
+/*//////////////////////////////////////////////////////////////
+* GAMEOBJECTS NEEDS TO BE ALLOCATED IN HEAP MEMORY, USING NEW
+*///////////////////////////////////////////////////////////////
 
-void registerGameObject(GameObject obj) {
-	objects[obj.getName()] = obj;
-	objectsColection.push_back(obj.getName());
-	registerObjectToFrame(obj);
-}
+std::map<std::string, GameObject*> * objectMap = new std::map<std::string, GameObject*>();
 
-list<string> getObjects() {
-	return objectsColection;
-}
-
-//get gameobject
 GameObject getGameObject(string name) {
-	return objects[name];
+	return *objectMap->at(name);
+}
+
+void removeGameObject(GameObject * obj) {
+	objectMap->erase(obj->getName());
+}
+
+void registerGameObject(GameObject* obj, Scene* scene) {
+	string n = obj->getName();
+	int x = obj->getX();
+	int y = obj->getY();
+	int h = obj->getHeight();
+	int w = obj->getWidth();
+
+	objectMap->insert(pair<string, GameObject *> (n, obj));
+	scene->addGameObject(*obj);
+	registerObjectToFrame(n, x, y, h, w);
+	
 }
 
 //GameObject constructor
-GameObject::GameObject(int xLoc, int yLoc, int layer, string name, Image newImage) {
+GameObject::GameObject(int xLoc, int yLoc, int layer, string n, Image newImage) {
 	x = xLoc;
 	y = yLoc;
 	l = layer;
-	GameObject::name = name;
+	name = n;
 	updateImage(newImage);
 }
-GameObject::GameObject(int xLoc, int yLoc, int layer, string name) {
+GameObject::GameObject(int xLoc, int yLoc, int layer, string n) {
 	x = xLoc;
 	y = yLoc;
 	l = layer;
-	GameObject::name = name;
+	h = 0;
+	w = 0;
+	name = n;
 }
-GameObject::GameObject(string name) {
+GameObject::GameObject(string n) {
 	x = 0;
 	y = 0;
 	l = 0;
-	GameObject::name = name;
+	h = 0;
+	w = 0;
+	name = n;
 }
 GameObject::GameObject() {
 	x = 0;
 	y = 0;
 	l = 0;
-	GameObject::name = "";
+	h = 0;
+	w = 0;
+	name = "";
+}
+//on removal
+GameObject::~GameObject() {
+
 }
 //teleport
 void GameObject::teleport(int xLoc, int yLoc) {
@@ -60,10 +78,6 @@ void GameObject::teleport(int xLoc, int yLoc) {
 //get name
 string GameObject::getName() {
 	return name;
-}
-//erase
-void GameObject::erase() {
-	objects.erase(name);
 }
 //get location
 int GameObject::getX() {

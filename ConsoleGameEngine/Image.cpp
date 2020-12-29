@@ -1,8 +1,7 @@
-#include "Image.h"
 #include <iostream>
 #include <vector>
 
-#include "Frame.h"
+#include "SEngine.h"
 
 using namespace std;
 

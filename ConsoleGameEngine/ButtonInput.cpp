@@ -2,7 +2,7 @@
 #include <conio.h>
 #include <Windows.h>
 
-#define LOG(x) cout << x << endl;
+#include "SEngine.h"
 
 using namespace std;
 
@@ -15,7 +15,7 @@ int * getLastKeyPressed() {
 
 //start key checking loop
 void startCheckingKeyInput() {
-	while (true) {
+	while (isGameRunning()) {
 		lastKey = _getch(); //look for button input
 	}
 }

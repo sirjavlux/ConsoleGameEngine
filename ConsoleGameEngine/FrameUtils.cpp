@@ -9,21 +9,19 @@
 #include <mutex>
 #include <chrono>
 
-#include "Frame.h"
-#include "Engine.h"
-#include "GameObject.h"
-#include "Image.h"
+#include "SEngine.h"
+#include "Utils.h"
 
 using namespace std;
 
 //cached gameobjects
-deque<string> notInFrame;
-deque<string> inFrame;
-deque<string> closeToFrame;
+vector<string> notInFrame;
+vector<string> inFrame;
+vector<string> closeToFrame;
 string textBox = "";
 
 //check if gameobject overlaps frame
-bool overlapsFrame(GameObject obj) {
+bool overlapsFrame(int x, int y, int h, int w) {
 	//frame coordinates
 	int cameraX = getCameraX() - frameW / 2;
 	int cameraY = getCameraY() - frameH / 2;
@@ -31,8 +29,8 @@ bool overlapsFrame(GameObject obj) {
 	int frameY1 = cameraY; int frameY2 = cameraY + frameH;
 
 	//object coordinates
-	int x1 = obj.getX(); int x2 = obj.getX() + obj.getWidth();
-	int y1 = obj.getY(); int y2 = obj.getY() + obj.getHeight();
+	int x1 = x; int x2 = x + w;
+	int y1 = y; int y2 = y + h;
 
 	if (x2 < frameX1 || x1 > frameX2) return false;
 	else if (y2 < frameY1 || y1 > frameY2) return false;
@@ -40,7 +38,7 @@ bool overlapsFrame(GameObject obj) {
 }
 
 //check if gameobject overlaps frame with offset
-bool overlapsFrame(GameObject obj, int offset) {
+bool overlapsFrame(int x, int y, int h, int w, int offset) {
 	//frame coordinates
 	int cameraX = getCameraX() - frameW / 2;
 	int cameraY = getCameraY() - frameH / 2;
@@ -48,12 +46,30 @@ bool overlapsFrame(GameObject obj, int offset) {
 	int frameY1 = cameraY; int frameY2 = cameraY + frameH;
 
 	//object coordinates
-	int x1 = obj.getX(); int x2 = obj.getX() + obj.getWidth();
-	int y1 = obj.getY(); int y2 = obj.getY() + obj.getHeight();
+	int x1 = x; int x2 = x + w;
+	int y1 = y; int y2 = y + h;
 
 	if (x2 < frameX1 - offset || x1 > frameX2 + offset) return false;
 	else if (y2 < frameY1 - offset || y1 > frameY2 + offset) return false;
 	else return true;
+}
+
+//update scene objects
+void updateFrameObjects() {
+	notInFrame.clear();
+	inFrame.clear();
+	closeToFrame.clear();
+
+	Scene* activeScene = getActiveScene();
+
+	list<string> objects = activeScene->getObjectNames();
+	list<string>::iterator iter = objects.begin();
+
+	while (iter != objects.end()) {
+		GameObject obj = getGameObject(*iter);
+		registerObjectToFrame(*iter, obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth());
+		iter++;
+	}
 }
 
 int lastCloseUpcateCameraLocX = 0;
@@ -74,35 +90,39 @@ void updateCloseToFrame() {
 		//update close objects
 		lastCloseUpcateCameraLocX = getCameraX();
 		lastCloseUpcateCameraLocY = getCameraY();
-		deque<string> mapObjects = notInFrame;
-		deque<string> newNotInFrame, newInFrame;
-		deque<string>::iterator iter = mapObjects.begin();
+		vector<string> mapObjects = notInFrame;
+		vector<string> newNotInFrame, newInFrame;
+		vector<string>::iterator iter = mapObjects.begin();
 		while (iter != mapObjects.end()) {
 			string objName = *iter;
-			GameObject obj = getGameObject(objName);
-			if (overlapsFrame(obj)) {
-				inFrame.push_back(objName);
-			}
-			else if (overlapsFrame(obj, updateOffset)) {
-				closeToFrame.push_back(objName);
-			}
-			else {
-				newNotInFrame.push_back(objName);
+			if (!objName.empty()) {
+				GameObject obj = getGameObject(objName);
+				if (overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth())) {
+					inFrame.push_back(objName);
+				}
+				else if (overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth(), updateOffset)) {
+					closeToFrame.push_back(objName);
+				}
+				else {
+					newNotInFrame.push_back(objName);
+				}
 			}
 			iter++;
 		}
 		notInFrame = newNotInFrame;
 		//update frame objects
-		deque<string> mapObjects2 = inFrame;
-		deque<string>::iterator iter2 = mapObjects2.begin();
+		vector<string> mapObjects2 = inFrame;
+		vector<string>::iterator iter2 = mapObjects2.begin();
 		while (iter2 != mapObjects2.end()) {
 			string objName = *iter2;
-			GameObject obj = getGameObject(objName);
-			if (!overlapsFrame(obj)) {
-				closeToFrame.push_back(objName);
-			}
-			else {
-				newInFrame.push_back(objName);
+			if (!objName.empty()) {
+				GameObject obj = getGameObject(objName);
+				if (!overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth())) {
+					closeToFrame.push_back(objName);
+				}
+				else {
+					newInFrame.push_back(objName);
+				}
 			}
 			iter2++;
 		}
@@ -116,15 +136,15 @@ void updateObjectToFrame(GameObject obj) {
 }
 
 //register object for possible rendering
-void registerObjectToFrame(GameObject obj) {
-	if (overlapsFrame(obj)) {
-		inFrame.push_back(obj.getName());
+void registerObjectToFrame(std::string n, int x, int y, int h, int w) {
+	if (overlapsFrame(x, y, h, w)) {
+		inFrame.push_back(n);
 	}
-	else if (overlapsFrame(obj, updateOffset)) {
-		closeToFrame.push_back(obj.getName());
+	else if (overlapsFrame(x, y, h, w, updateOffset)) {
+		closeToFrame.push_back(n);
 	}
 	else {
-		notInFrame.push_back(obj.getName());
+		notInFrame.push_back(n);
 	}
 }
 
@@ -136,18 +156,18 @@ void updateCameraMovementFrame() {
 
 void updateCameraMovementFrameFinal() {
 	if (cameraMove == true) {
-		deque<string> newCloseToFrame;
-		deque<string> mapObjects = closeToFrame;
-		deque<string>::iterator iter = mapObjects.begin();
+		vector<string> newCloseToFrame;
+		vector<string> mapObjects = closeToFrame;
+		vector<string>::iterator iter = mapObjects.begin();
 		while (iter != mapObjects.end()) {
 			string objName = *iter;
 			GameObject obj = getGameObject(objName);
 			//to frame
-			if (overlapsFrame(obj)) {
+			if (overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth())) {
 				inFrame.push_back(objName);
 			}
 			//away from close to frame
-			else if (!overlapsFrame(obj, updateOffset)) {
+			else if (!overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth(), updateOffset)) {
 				notInFrame.push_back(objName);
 			}
 			else {
@@ -168,18 +188,16 @@ void findObjectsInFrame() {
 		auto start = std::chrono::steady_clock::now();
 
 		//update camera caching and such
-		updateCloseToFrame();
-		updateCameraMovementFrameFinal();
+		if (getActiveScene() != nullptr) {
+			updateCloseToFrame();
+			updateCameraMovementFrameFinal();
+		}
 
 		//get end time
 		auto end = std::chrono::steady_clock::now();
 
 		//get time differance
 		double elapsedTime = double(std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count());
-
-		//stringstream stm;
-		//stm << endl << "Time to load " << elapsedTime;
-		//setBottomTextBox(stm.str());
 
 		double elapsedTimeDiff = 1 - ((elapsedTime > 1000.0 ? 1000.0 : elapsedTime) / 1000.0);
 		int finalSleepTime = (1000 / objectSearchDelay);
@@ -188,8 +206,8 @@ void findObjectsInFrame() {
 	}
 }
 
-deque<string> * getInFrame() {
-	return &inFrame;
+vector<string> getInFrame() {
+	return inFrame;
 }
 
 void setBottomTextBox(string str) {

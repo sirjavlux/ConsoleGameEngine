@@ -1,19 +1,5 @@
-#pragma once
-#include <vector>
-#include <iostream>
-#include <Windows.h>
-
-class Image
-{
-private:
-	std::vector<std::vector<char>> image;
-public:
-	Image();
-	void addLine(std::string line);
-	std::vector<std::vector<char>> getVector();
-	int calcWidth();
-	int calcHeight();
-};
+#ifndef _IMAGECOLOR_
+#define _IMAGECOLOR_
 
 //defined background colors
 #define b "\033[40m" /* Black */
@@ -43,3 +29,5 @@ public:
 #define BOLDMAGENTA "[1m\033[35m"      /* Bold Magenta */
 #define BOLDCYAN    "[1m\033[36m"      /* Bold Cyan */
 #define BOLDWHITE   "[1m\033[37m"      /* Bold White */
+
+#endif

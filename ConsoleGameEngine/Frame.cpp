@@ -4,45 +4,49 @@
 #include <sstream>
 #include <cmath>
 #include <deque>
+#include <list>
 #include <Windows.h>
 #include <thread>
 
-#include "Frame.h"
-#include "Engine.h"
-#include "GameObject.h"
-#include "Image.h"
+#include "SEngine.h"
 #include "Utils.h"
+#include "DefinedImageColors.h"
 
 using namespace std;
 
-//frame constructor
-Frame::Frame() {
-	h = frameH;
-	w = frameW;
-	x = getCameraX() - w / 2;
-	y = getCameraY() - h / 2;
-}
+/*
+FIX STACK PROBLEM
+*/
 
 //draw frame on console
-void Frame::draw() {
+void drawFrame() {
+	
+	//resetArrays();
+	char pixels[frameH][frameW] = { {} };
+	int pixelsLayer[frameH][frameW] = { {} };
 
-	deque<string> frame;
+	int x = getCameraX() - frameW / 2;;
+	int y = getCameraY() - frameH / 2;;
+
+	vector<string> frame;
 	bool abort = false;
 
 	try {
-		frame = *getInFrame();
+		frame = getInFrame();
 	}
 	catch (exception) {
 		abort = true;
 	}
-	
-	//fix console writing/remove flicker and reset
-	ClearScreen();
 
 	//make this faster
 	if (!abort) {
-		deque<string>::iterator iter = frame.begin();
+		vector<string>::iterator iter = frame.begin();
 		while (iter != frame.end()) {
+
+			if ((*iter).empty()) {
+				iter++; //increase
+				continue;
+			}
 			//variables
 			string objName = *iter;
 			GameObject obj = getGameObject(objName);
@@ -60,13 +64,13 @@ void Frame::draw() {
 			if (imageVector.size() > 0) {
 				for (int i = 0; i < imageVector.size(); i++) {
 					int yPixLoc = yLoc + height - i;
-					if (!(yPixLoc < y + h && yPixLoc >= y)) continue;
+					if (!(yPixLoc < y + frameH && yPixLoc >= y)) continue;
 
 					//loop trough x axis and place into pixelarray
 					if (imageVector[i].size() > 0) {
 						for (int i2 = 0; i2 < imageVector[i].size(); i2++) {
 							int xPixLoc = xLoc + i2;
-							if (!(xPixLoc < x + w && xPixLoc >= x)) continue;
+							if (!(xPixLoc < x + frameW && xPixLoc >= x)) continue;
 							else {
 								char c = imageVector[i].at(i2);
 								char oldC = pixels[yPixLoc - y][xPixLoc - x];
@@ -88,26 +92,29 @@ void Frame::draw() {
 	//loop trough pixels and put together a single line to print
 	stringstream stm;
 
-	for (int i = 0; i < w + 2; i++) stm << borderStr; //upper border
+	for (int i = 0; i < frameW + 2; i++) stm << borderStr; //upper border
 	stm << RESET << endl;
 
 	//loop trough y axis of pixel array
-	for (int yIn = 0; yIn < h; yIn++) {
+	for (int yIn = 0; yIn < frameH; yIn++) {
 		stm << borderStr;
-		for (int xIn = 0; xIn < w; xIn++) {
-			char c = pixels[h - (yIn + 1)][xIn];
+		for (int xIn = 0; xIn < frameW; xIn++) {
+			char c = pixels[frameH - (yIn + 1)][xIn];
 			convertToColored(c, ' ', ' ', stm); //implement letter support / text support <-----------------
 		}
 		stm << borderStr << RESET << endl;
 	}
 
-	for (int i = 0; i < w + 2; i++) stm << borderStr; //lower border
+	for (int i = 0; i < frameW + 2; i++) stm << borderStr; //lower border
 	stm << RESET;
 
 	cout << stm.str() << endl; //print frame
 
 	//print underneth text
 	cout << getBottomTextBox();
+
+	//fix console writing/remove flicker and reset
+	ClearScreen();
 }
 
 //convert to colored
