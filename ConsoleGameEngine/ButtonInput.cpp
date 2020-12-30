@@ -14,8 +14,8 @@ int * getLastKeyPressed() {
 }
 
 //start key checking loop
-void startCheckingKeyInput() {
-	while (isGameRunning()) {
+void startCheckingKeyInput(SEngine* engine) {
+	while (engine->isGameRunning()) {
 		lastKey = _getch(); //look for button input
 	}
 }

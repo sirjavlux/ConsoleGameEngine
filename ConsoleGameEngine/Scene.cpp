@@ -1,7 +1,9 @@
 #include <iostream>
 #include <map>
 #include <deque>
+#include <list>
 #include <exception>
+#include <algorithm>
 
 #include "SEngine.h"
 
@@ -23,14 +25,14 @@ using namespace std;
 		scenes.erase(name);
 	}
 
-	void setActiveScene(Scene * scene) {
+	void setActiveScene(SEngine * engine, Scene * scene) {
 		activeScene = scene;
-		updateFrameObjects();
+		updateFrameObjects(engine);
 	}
 
-	void setActiveScene(string name) {
+	void setActiveScene(SEngine* engine, string name) {
 		activeScene = getScene(name);
-		updateFrameObjects();
+		updateFrameObjects(engine);
 	}
 
 	Scene * getActiveScene() {
@@ -41,9 +43,9 @@ using namespace std;
 		startScene = scene;
 	}
 
-	void setActiveStartScene(string name) {
+	void setActiveStartScene(SEngine* engine, string name) {
 		startScene = getScene(name);
-		updateFrameObjects();
+		updateFrameObjects(engine);
 	}
 
 	Scene* getActiveStartScene() {
@@ -56,22 +58,26 @@ using namespace std;
 
 	//on removal
 	Scene::~Scene() {
+		objects = new vector<string>();
 		delete this;
 	}
 	//constructor
 	Scene::Scene() { 
+		objects = new vector<string>();
 		n = "";
 		CameraStartX = 0;
 		CameraStartY = 0;
 		scenes[n] = this;
 	}
 	Scene::Scene(string name) {
+		objects = new vector<string>();
 		n = name;
 		CameraStartX = 0;
 		CameraStartY = 0;
 		scenes[n] = this;
 	}
 	Scene::Scene(string name, int startX, int startY) {
+		objects = new vector<string>();
 		n = name;
 		CameraStartX = startX;
 		CameraStartY = startY;
@@ -88,14 +94,14 @@ using namespace std;
 	void Scene::setStartY(int y) {
 		CameraStartY = y;
 	}
-	list<string> Scene::getObjectNames() {
+	vector<string> *& Scene::getObjectNames() {
 		return objects;
 	}
 	void Scene::addGameObject(GameObject obj) {
-		objects.push_back(obj.getName());
+		objects->push_back(obj.getName());
 	}
 	void Scene::removeGameObject(string name) {
-		objects.remove(name);
+		objects->erase(remove(objects->begin(), objects->end(), name));
 	}
 	void Scene::setName(string name) {
 		n = name;

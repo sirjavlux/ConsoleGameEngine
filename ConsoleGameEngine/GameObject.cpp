@@ -17,6 +17,10 @@ GameObject * getGameObject(string name) {
 	return objectMap->at(name);
 }
 
+GameObject * getUnsecureGameObject(string name) {
+	return objectMap->find(name) == objectMap->end() ? &GameObject() : objectMap->at(name);
+}
+
 void removeGameObject(GameObject * obj) {
 	objectMap->erase(obj->getName());
 }
@@ -30,8 +34,6 @@ void registerGameObject(GameObject* obj, Scene* scene) {
 
 	objectMap->insert(pair<string, GameObject *> (n, obj));
 	scene->addGameObject(*obj);
-	registerObjectToFrame(n, x, y, h, w);
-	
 }
 
 //GameObject constructor

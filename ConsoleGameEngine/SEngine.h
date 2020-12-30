@@ -7,6 +7,30 @@
 #include <vector>
 #include <deque>
 #include <exception>
+#include <Windows.h>
+#include <thread>
+
+/*///////////////////////////
+* PIXEL
+*////////////////////////////
+
+class Pixel
+{
+private:
+	COLORREF COLOR;
+	int xOffset;
+	int l;
+public:
+	Pixel(COLORREF color, int lenght, int offset);
+	Pixel(int lenght, int offset);
+	Pixel();
+	void setLenght(int lenght);
+	int getLenght();
+	void setOffset(int offset);
+	int getOffset();
+	void setColor(COLORREF color);
+	COLORREF getColor();
+};
 
 /*///////////////////////////
 * IMAGE
@@ -15,11 +39,11 @@
 class Image
 {
 private:
-	std::vector<std::vector<char>> image;
+	std::vector<std::vector<Pixel*>*> * image;
 public:
 	Image();
 	void addLine(std::string line);
-	std::vector<std::vector<char>> * getVector();
+	std::vector<std::vector<Pixel*>*> *& getVector();
 	int calcWidth();
 	int calcHeight();
 };
@@ -53,6 +77,49 @@ public:
 
 void removeGameObject(GameObject * obj);
 GameObject * getGameObject(std::string name);
+GameObject * getUnsecureGameObject(std::string name);
+
+/*///////////////////////////
+* MAIN ENGINE FUNCTIONS
+*////////////////////////////
+
+class SEngine {
+private:
+	std::thread* keyInput;
+	std::thread* frames;
+	std::thread* draw;
+	std::thread* physics;
+	bool running;
+	int tickSpeed, drawSpeed;
+	int cameraX, cameraY, cameraFollowOffsetX, cameraFollowOffsetY;
+	int pixelScale;
+	std::string cameraFollowObject;
+	HDC mydc;
+	void startGame();
+public:
+	void updateCamera();
+	SEngine(int maxTickSpeed, int maxDrawSpeed, int pixelScale);
+	SEngine();
+	~SEngine();
+	int getTickSpeed();
+	int getDrawSpeed();
+	void setTickSpeed(int amount);
+	void setDrawSpeed(int amount);
+	int getPixelScale();
+	void setPixelScale(int scale);
+	int getCameraX();
+	int getCameraY();
+	void teleportCamera(int x, int y);
+	void setCameraFollow(GameObject obj);
+	void cancelCameraFollow();
+	bool hasCameraObjectAttatched();
+	GameObject* getCameraFollowObject();
+	void setCameraFollowOffsetX(int amount);
+	void setCameraFollowOffsetY(int amount);
+	bool isGameRunning();
+	HDC getDC();
+	void shutdown();
+};
 
 /*///////////////////////////
 * SCENE CLASS AND FUNCTIONS
@@ -60,7 +127,7 @@ GameObject * getGameObject(std::string name);
 
 class Scene {
 private:
-	std::list<std::string> objects;
+	std::vector<std::string> * objects;
 	int CameraStartX, CameraStartY;
 	std::string n;
 public:
@@ -71,7 +138,7 @@ public:
 	std::pair<int, int> getStartLocation();
 	void setStartX(int x);
 	void setStartY(int y);
-	std::list<std::string> getObjectNames();
+	std::vector<std::string> *& getObjectNames();
 	void addGameObject(GameObject obj);
 	void removeGameObject(std::string name);
 	void setName(std::string name);
@@ -80,32 +147,14 @@ public:
 
 Scene* getScene(std::string name);
 void removeScene(std::string name);
-void setActiveScene(Scene* scene);
-void setActiveScene(std::string name);
+void setActiveScene(SEngine* engine, Scene* scene);
+void setActiveScene(SEngine* engine, std::string name);
 Scene* getActiveScene();
 void setActiveStartScene(Scene* scene);
-void setActiveStartScene(std::string name);
+void setActiveStartScene(SEngine* engine, std::string name);
 Scene* getActiveStartScene();
 
 void registerGameObject(GameObject* obj, Scene* scene); // GameObject function
-
-/*///////////////////////////
-* MAIN ENGINE FUNCTIONS
-*////////////////////////////
-
-void shutdown();
-const int frameH = 48;
-const int frameW = 96;
-int getCameraX();
-int getCameraY();
-void teleportCamera(int x, int y);
-void setCameraFollow(GameObject obj);
-void cancelCameraFollow();
-bool hasCameraObjectAttatched();
-GameObject getCameraFollowObject();
-void setCameraOffsetX(int amount);
-void setCameraOffsetY(int amount);
-bool isGameRunning();
 
 /*///////////////////////////
 * KEY PRESS FUNCTIONS
@@ -120,36 +169,28 @@ int* getLastKeyPressed();
 const std::string borderStr = "\033[47m \033[0m";
 const char emptyPixel = ' ';
 
-void drawFrame();
+void drawFrame(SEngine * engine);
 void setBottomTextBox(std::string str);
 std::string getBottomTextBox();
-std::vector<std::string> getInFrame();
-void registerObjectToFrame(std::string n, int x, int y, int h, int w);
+std::vector<std::string> * getInFrame();
+void registerObjectToFrame(SEngine* engine, std::string n, int x, int y, int h, int w);
 void updateObjectToFrame(GameObject obj);
 void updateCameraMovementFrame();
-void findObjectsInFrame();
-void convertToColored(char c, char letter, char textC, std::stringstream& stm);
-void updateFrameObjects();
+void findObjectsInFrame(SEngine* engine);
+void updateFrameObjects(SEngine * engine);
 
 /*///////////////////////////
 * EVENT
 *////////////////////////////
 
-void updateEvents();
+void updateEvents(SEngine* engine);
 
 /*///////////////////////////
 * PHYSICS
 *////////////////////////////
 
-void startPhysics();
-
 /*///////////////////////////
 * EXCEPTIONS
 *////////////////////////////
-
-class InvalidGameObjectIdentifier : public std::exception {
-public:
-	const char* what() const throw ();
-};
 
 #endif

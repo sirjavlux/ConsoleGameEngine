@@ -21,12 +21,14 @@ vector<string> closeToFrame;
 string textBox = "";
 
 //check if gameobject overlaps frame
-bool overlapsFrame(int x, int y, int h, int w) {
+bool overlapsFrame(SEngine* engine, int x, int y, int h, int w) {
+	int width = getScreenWidth();
+	int height = getScreenHeight();
 	//frame coordinates
-	int cameraX = getCameraX() - frameW / 2;
-	int cameraY = getCameraY() - frameH / 2;
-	int frameX1 = cameraX; int frameX2 = cameraX + frameW;
-	int frameY1 = cameraY; int frameY2 = cameraY + frameH;
+	int cameraX = engine->getCameraX() - width / 2;
+	int cameraY = engine->getCameraY() - height / 2;
+	int frameX1 = cameraX; int frameX2 = cameraX + width;
+	int frameY1 = cameraY; int frameY2 = cameraY + height;
 
 	//object coordinates
 	int x1 = x; int x2 = x + w;
@@ -38,12 +40,14 @@ bool overlapsFrame(int x, int y, int h, int w) {
 }
 
 //check if gameobject overlaps frame with offset
-bool overlapsFrame(int x, int y, int h, int w, int offset) {
+bool overlapsFrame(SEngine* engine, int x, int y, int h, int w, int offset) {
+	int width = getScreenWidth();
+	int height = getScreenHeight();
 	//frame coordinates
-	int cameraX = getCameraX() - frameW / 2;
-	int cameraY = getCameraY() - frameH / 2;
-	int frameX1 = cameraX; int frameX2 = cameraX + frameW;
-	int frameY1 = cameraY; int frameY2 = cameraY + frameH;
+	int cameraX = engine->getCameraX() - width / 2;
+	int cameraY = engine->getCameraY() - height / 2;
+	int frameX1 = cameraX; int frameX2 = cameraX + width;
+	int frameY1 = cameraY; int frameY2 = cameraY + height;
 
 	//object coordinates
 	int x1 = x; int x2 = x + w;
@@ -55,26 +59,28 @@ bool overlapsFrame(int x, int y, int h, int w, int offset) {
 }
 
 //update scene objects
-void updateFrameObjects() {
+void updateFrameObjects(SEngine * engine) {
 	notInFrame.clear();
 	inFrame.clear();
 	closeToFrame.clear();
 
-	Scene* activeScene = getActiveScene();
+	if (getActiveScene() != nullptr) {
+		Scene* activeScene = getActiveScene();
 
-	list<string> objects = activeScene->getObjectNames();
-	list<string>::iterator iter = objects.begin();
+		vector<string> objects = *activeScene->getObjectNames();
 
-	while (iter != objects.end()) {
-		GameObject * obj = getGameObject(*iter);
-		registerObjectToFrame(*iter, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth());
-		iter++;
+		vector<string>::iterator iter = objects.begin();
+
+		while (iter != objects.end()) {
+			GameObject* obj = getGameObject(*iter);
+			registerObjectToFrame(engine, *iter, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth());
+			iter++;
+		}
 	}
 }
 
 int lastCloseUpcateCameraLocX = 0;
 int lastCloseUpcateCameraLocY = 0;
-int updateOffset = frameH / 2;
 
 //distance 
 double distance(int x2, int x1, int y2, int y1) {
@@ -82,14 +88,14 @@ double distance(int x2, int x1, int y2, int y1) {
 }
 
 //update close to frame if camera has moved enough
-void updateCloseToFrame() {
+void updateCloseToFrame(SEngine * engine) {
 	//calculate distance
-	double dist = distance(getCameraX(), lastCloseUpcateCameraLocX, getCameraY(), lastCloseUpcateCameraLocY);
+	double dist = distance(engine->getCameraX(), lastCloseUpcateCameraLocX, engine->getCameraY(), lastCloseUpcateCameraLocY);
 	//check if distance is far enugh for update
-	if (dist >= updateOffset) {
+	if (dist >= getScreenWidth() / 4) {
 		//update close objects
-		lastCloseUpcateCameraLocX = getCameraX();
-		lastCloseUpcateCameraLocY = getCameraY();
+		lastCloseUpcateCameraLocX = engine->getCameraX();
+		lastCloseUpcateCameraLocY = engine->getCameraY();
 		vector<string> mapObjects = notInFrame;
 		vector<string> newNotInFrame, newInFrame;
 		vector<string>::iterator iter = mapObjects.begin();
@@ -97,10 +103,10 @@ void updateCloseToFrame() {
 			string objName = *iter;
 			if (!objName.empty()) {
 				GameObject * obj = getGameObject(objName);
-				if (overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
+				if (overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 					inFrame.push_back(objName);
 				}
-				else if (overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), updateOffset)) {
+				else if (overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), getScreenWidth() / 4)) {
 					closeToFrame.push_back(objName);
 				}
 				else {
@@ -117,7 +123,7 @@ void updateCloseToFrame() {
 			string objName = *iter2;
 			if (!objName.empty()) {
 				GameObject * obj = getGameObject(objName);
-				if (!overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
+				if (!overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 					closeToFrame.push_back(objName);
 				}
 				else {
@@ -136,11 +142,11 @@ void updateObjectToFrame(GameObject obj) {
 }
 
 //register object for possible rendering
-void registerObjectToFrame(std::string n, int x, int y, int h, int w) {
-	if (overlapsFrame(x, y, h, w)) {
+void registerObjectToFrame(SEngine * engine, std::string n, int x, int y, int h, int w) {
+	if (overlapsFrame(engine, x, y, h, w)) {
 		inFrame.push_back(n);
 	}
-	else if (overlapsFrame(x, y, h, w, updateOffset)) {
+	else if (overlapsFrame(engine, x, y, h, w, getScreenWidth() / 4)) {
 		closeToFrame.push_back(n);
 	}
 	else {
@@ -154,7 +160,7 @@ void updateCameraMovementFrame() {
 	cameraMove = true;
 }
 
-void updateCameraMovementFrameFinal() {
+void updateCameraMovementFrameFinal(SEngine * engine) {
 	if (cameraMove == true) {
 		vector<string> newCloseToFrame;
 		vector<string> mapObjects = closeToFrame;
@@ -163,11 +169,11 @@ void updateCameraMovementFrameFinal() {
 			string objName = *iter;
 			GameObject * obj = getGameObject(objName);
 			//to frame
-			if (overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
+			if (overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 				inFrame.push_back(objName);
 			}
 			//away from close to frame
-			else if (!overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), updateOffset)) {
+			else if (!overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), getScreenWidth() / 4)) {
 				notInFrame.push_back(objName);
 			}
 			else {
@@ -182,15 +188,15 @@ void updateCameraMovementFrameFinal() {
 
 //find all objects and decide wether to keep them
 const int objectSearchDelay = 10;
-void findObjectsInFrame() {
-	while (isGameRunning()) {
+void findObjectsInFrame(SEngine* engine) {
+	while (engine->isGameRunning()) {
 		//get start time
 		auto start = std::chrono::steady_clock::now();
 
 		//update camera caching and such
 		if (getActiveScene() != nullptr) {
-			updateCloseToFrame();
-			updateCameraMovementFrameFinal();
+			updateCloseToFrame(engine);
+			updateCameraMovementFrameFinal(engine);
 		}
 
 		//get end time
@@ -206,8 +212,8 @@ void findObjectsInFrame() {
 	}
 }
 
-vector<string> getInFrame() {
-	return inFrame;
+vector<string> * getInFrame() {
+	return &inFrame;
 }
 
 void setBottomTextBox(string str) {

@@ -1,3 +1,4 @@
+#define _WIN32_WINNT 0x0500
 #include <iostream>
 #include <map>
 #include <vector>
@@ -7,6 +8,7 @@
 #include <list>
 #include <Windows.h>
 #include <thread>
+#include <Bits.h>
 
 #include "SEngine.h"
 #include "Utils.h"
@@ -14,156 +16,100 @@
 
 using namespace std;
 
-/*
-FIX STACK PROBLEM
-*/
-
-PairMap<frameH, frameW, char, int>* pixelMap = new PairMap<frameH, frameW, char, int>();
+COLORREF COLOR = RGB(255, 160, 100);
 
 //draw frame on console
-void drawFrame() {
+void drawFrame(SEngine * engine) {
 
-	int x = getCameraX() - frameW / 2;;
-	int y = getCameraY() - frameH / 2;;
+	int width = getScreenWidth();
+	int height = getScreenHeight();
+	int scale = engine->getPixelScale();
 
-	vector<string> frame;
-	bool abort = false;
+	int x = engine->getCameraX() - width / 2;
+	int y = engine->getCameraY() - height / 2;
 
-	try {
-		frame = getInFrame();
-	}
-	catch (exception) {
-		abort = true;
-	}
+	vector<string> * frame = getInFrame();
 
-	//make this faster
-	if (!abort) {
-		vector<string>::iterator iter = frame.begin();
-		while (iter != frame.end()) {
-			//variables
-			if (!(*iter).empty()) {
-				GameObject* obj = getGameObject(*iter);
-				int xLoc = obj->getX();
-				int yLoc = obj->getY();
-				int layer = obj->getLayer();
-				Image* image = obj->getImage();
-				vector< vector<char> >* imageVector = image->getVector();
+	const int startSize = frame->size();
 
-				iter++; //increase
+	HWND myconsole = GetConsoleWindow();
+	HDC mydc = GetDC(myconsole);
 
-				//loop trough y axis
-				if (imageVector->size() > 0) {
-					for (int i = 0; i < imageVector->size(); i++) {
-						int yPixLoc = yLoc + obj->getHeight() - i;
-						if (!(yPixLoc < y + frameH && yPixLoc >= y)) continue;
+	//make this faster 1160
+	for (int it = 0; it < startSize; it++) {
+		//variables
+		GameObject* obj;
+		try {
+			obj = getGameObject(frame->at(it));
+		} 
+		catch (exception) { continue; }
 
-						//loop trough x axis and place into pixelarray
-						if (imageVector->at(i).size() > 0) {
-							for (int i2 = 0; i2 < imageVector->at(i).size(); i2++) {
-								int xPixLoc = xLoc + i2;
-								if (!(xPixLoc < x + frameW && xPixLoc >= x)) continue;
-								else {
-									char c = imageVector->at(i)[i2];
-									char oldC = pixelMap->getValues(yPixLoc - y, xPixLoc - x).first;
-									if (c == emptyPixel) continue;
-									else if (oldC != emptyPixel) {
-										int prevLayer = pixelMap->getValues(yPixLoc - y, xPixLoc - x).second;
-										if (layer <= prevLayer) continue;
+		int xLoc = obj->getX();
+		int yLoc = obj->getY();
+		int layer = obj->getLayer();
+		Image* image = obj->getImage();
+		vector< vector<Pixel* >* >* imageVector = image->getVector();
+
+		//loop trough y axis
+		if (imageVector->size() > 0) {
+			for (int i = 0; i < imageVector->size(); i++) {
+				int yPixLoc = yLoc + obj->getHeight() - i;
+				if (!(yPixLoc < y + height && yPixLoc >= y)) continue;
+				if (imageVector->at(i)->size() > 0) {
+					for (int i2 = 0; i2 < imageVector->at(i)->size(); i2++) {
+						//render pixels
+						Pixel* pixel = imageVector->at(i)->at(i2);
+						COLORREF color = pixel->getColor();
+						for (int p = 0; p < pixel->getLenght(); p++) {
+							int xPixLoc = xLoc + pixel->getOffset() + p;
+							if (xPixLoc < x + width && xPixLoc >= x) {
+								for (int i3 = 0; i3 < scale; i3++) {
+									for (int i4 = 0; i4 < scale; i4++) {
+										int printLocX = xPixLoc * scale - x + i4;
+										int printLocY = yPixLoc * scale - y + i3;
+										//render
+										SetPixel(mydc, printLocX, printLocY, color);
+
+										/*//////////////////////////////////
+										Need to fix bitmap rendering
+										*///////////////////////////////////
 									}
-									pixelMap->setValue(pair<char, int>(c, layer), yPixLoc - y, xPixLoc - x);
 								}
 							}
 						}
 					}
 				}
 			}
-			else iter++;
 		}
 	}
-
-	//loop trough pixels and put together a single line to print
-	stringstream stm;
-
-	for (int i = 0; i < frameW + 2; i++) stm << borderStr; //upper border
-	stm << RESET << endl;
-
-	//loop trough y axis of pixel array
-	for (int yIn = 0; yIn < frameH; yIn++) {
-		stm << borderStr;
-		for (int xIn = 0; xIn < frameW; xIn++) {
-			char c = pixelMap->getValues(frameH - (yIn + 1), xIn).first;
-			convertToColored(c, ' ', ' ', stm); //implement letter support / text support <-----------------
-		}
-		stm << borderStr << RESET << endl;
-	}
-
-	for (int i = 0; i < frameW + 2; i++) stm << borderStr; //lower border
-	stm << RESET;
-
-	cout << stm.str() << endl; //print frame
 
 	//print underneth text
 	cout << getBottomTextBox();
 
 	//fix console writing/remove flicker and reset
 	ClearScreen();
-
-	pixelMap->clear();
 }
 
-//convert to colored
-char lastBackColor = 'b';
-void convertToColored(char c, char letter, char textC, stringstream & stm) {
-	//background color
-	if (lastBackColor != c) {
-		lastBackColor = c;
-		switch (c) {
-		case 'b': stm << b;
-			break; //black
-		case 'R': stm << R;
-			break; //red
-		case 'G': stm << G;
-			break; //green
-		case 'Y': stm << Y;
-			break; //yellow
-		case 'B': stm << B;
-			break; //blue
-		case 'M': stm << M;
-			break; //magenta
-		case 'C': stm << C;
-			break; //cyan
-		case 'W': stm << W;
-			break; //white
-		default: stm << b;
-			break; //default is black
-		}
-	}
-	//text color
-	if (textC != ' ' && letter != ' ') {
-		switch (textC) {
-		case 'b': stm << BLACK;
-			break; //black
-		case 'R': stm << RED;
-			break; //red
-		case 'G': stm << GREEN;
-			break; //green
-		case 'Y': stm << YELLOW;
-			break; //yellow
-		case 'B': stm << BLUE;
-			break; //blue
-		case 'M': stm << MAGENTA;
-			break; //magenta
-		case 'C': stm << CYAN;
-			break; //cyan
-		case 'W': stm << WHITE;
-			break; //white
-		}
-	}
-	//set letter
-	stm << letter;
-	//reset colors after letter
-	if (textC != ' ') {
-		stm << RESET;
-		lastBackColor = '0';
+//frame drawing loop
+void startConsoleDraw(SEngine* engine) {
+	//run core loop
+	while (engine->isGameRunning() == true) {
+
+		//start time
+		auto start = std::chrono::steady_clock::now();
+
+		//create and draw frame
+		drawFrame(engine);
+
+		//get end time
+		auto end = std::chrono::steady_clock::now();
+
+
+		//get time differance
+		double elapsedTime = double(std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count());
+
+		stringstream stm;
+		stm << "FPS " << (int)(1000 / elapsedTime) << " : Load Time " << elapsedTime << endl;
+		setBottomTextBox(stm.str());
 	}
 }

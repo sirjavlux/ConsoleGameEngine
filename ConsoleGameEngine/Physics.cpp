@@ -9,8 +9,8 @@ using namespace std;
 const int physicsSpeed = 20;
 
 //physics loop
-void startPhysics() {
-	while (isGameRunning()) {
+void startPhysics(SEngine* engine) {
+	while (engine->isGameRunning()) {
 		//start time
 		auto start = std::chrono::steady_clock::now();
 

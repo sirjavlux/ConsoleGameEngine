@@ -6,8 +6,10 @@
 
 #define LOG(x) cout << x << endl;
 
-//screen clear util
+//screen utils
 void ClearScreen();
+int getScreenWidth();
+int getScreenHeight();
 
 /*////////////////////////
 * FrameMap Class

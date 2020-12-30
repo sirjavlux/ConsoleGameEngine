@@ -11,3 +11,22 @@ void ClearScreen() {
     SetConsoleCursorPosition(hOut, Position);
 }
 
+int getScreenHeight() {
+	HWND myconsole = GetConsoleWindow();
+	//window size
+	RECT r;
+	GetWindowRect(myconsole, &r);
+	return r.bottom - r.top;
+}
+
+int getScreenWidth() {
+	HWND myconsole = GetConsoleWindow();
+	//window size
+	RECT r;
+	GetWindowRect(myconsole, &r);
+	return r.right - r.left;
+}
+
+void printPixels() {
+
+}

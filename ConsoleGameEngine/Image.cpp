@@ -6,30 +6,54 @@
 using namespace std;
 
 //constructor
-Image::Image() { }
+Image::Image() { 
+	image = new vector< vector<Pixel*>* >();
+}
 //set line
 void Image::addLine(string line) {
-	vector<char> chars;
+	vector<Pixel*> * pixels = new vector<Pixel*>();
+	Pixel * pixel = new Pixel();
+	char oldC = ' ';
+	int offset = 0;
 	for (int i = 0; i < line.length(); i++) {
 		char c = line.at(i);
-		chars.push_back(c);
+
+		//pre calculate pixel rows for performance
+		if (c != ' ') {
+			pixel->setLenght(pixel->getLenght() + 1);
+		}
+		if (c != oldC && oldC != ' ') {
+			//push and reset
+			pixel->setOffset(offset);
+			pixels->push_back(pixel);
+			pixel = new Pixel();
+		}
+		else if (i + 1 == line.length()) {
+			//push and reset
+			pixel->setOffset(offset);
+			pixels->push_back(pixel);
+			pixel = new Pixel();
+		}
+
+		if (c == ' ') offset = i + 1;
+		oldC = c;
 	}
-	image.push_back(chars);
+	image->push_back(pixels);
 }
 //get image vector
-vector< vector<char> > * Image::getVector() {
-	return &image;
+vector< vector<Pixel * > * > *& Image::getVector() {
+	return image;
 }
 //calculate width/height
 int Image::calcWidth() {
-	vector < vector<char> >::iterator iter = image.begin();
+	vector < vector<Pixel*> * >::iterator iter = image->begin();
 	int widest = 0; 
-	while (iter != image.end()) {
-		widest = (*iter).size() > widest ? (*iter).size() : widest;
+	while (iter != image->end()) {
+		widest = (*iter)->size() > widest ? (*iter)->size() : widest;
 		iter++;
 	}
 	return widest;
 }
 int Image::calcHeight() {
-	return image.size();
+	return image->size();
 }

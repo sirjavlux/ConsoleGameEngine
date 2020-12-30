@@ -2,14 +2,14 @@
 #define _IMAGECOLOR_
 
 //defined background colors
-#define b "\033[40m" /* Black */
-#define R "\033[41m" /* Red */
-#define G "\033[42m" /* Green */
-#define Y "\033[43m" /* Yellow */
-#define B "\033[44m" /* Blue */
-#define M "\033[45m" /* Magenta */
-#define C "\033[46m" /* Cyan */
-#define W "\033[47m" /* White */
+#define BACK_BLACK "\033[40m" /* Black */
+#define BACK_RED "\033[41m" /* Red */
+#define BACK_GREEN "\033[42m" /* Green */
+#define BACK_YELLOW "\033[43m" /* Yellow */
+#define BACK_BLUE "\033[44m" /* Blue */
+#define BACK_MAGENTA "\033[45m" /* Magenta */
+#define BACK_CYAN "\033[46m" /* Cyan */
+#define BACK_WHITE "\033[47m" /* White */
 
 //text colors defined
 #define RESET   "\033[0m"
