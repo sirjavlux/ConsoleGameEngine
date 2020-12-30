@@ -18,12 +18,10 @@ using namespace std;
 FIX STACK PROBLEM
 */
 
+PairMap<frameH, frameW, char, int>* pixelMap = new PairMap<frameH, frameW, char, int>();
+
 //draw frame on console
 void drawFrame() {
-	
-	//resetArrays();
-	char pixels[frameH][frameW] = { {} };
-	int pixelsLayer[frameH][frameW] = { {} };
 
 	int x = getCameraX() - frameW / 2;;
 	int y = getCameraY() - frameH / 2;;
@@ -42,50 +40,44 @@ void drawFrame() {
 	if (!abort) {
 		vector<string>::iterator iter = frame.begin();
 		while (iter != frame.end()) {
-
-			if ((*iter).empty()) {
-				iter++; //increase
-				continue;
-			}
 			//variables
-			string objName = *iter;
-			GameObject obj = getGameObject(objName);
-			int xLoc = obj.getX();
-			int yLoc = obj.getY();
-			int height = obj.getHeight();
-			int width = obj.getWidth();
-			int layer = obj.getLayer();
-			Image image = obj.getImage();
-			vector< vector<char> > imageVector = image.getVector();
+			if (!(*iter).empty()) {
+				GameObject* obj = getGameObject(*iter);
+				int xLoc = obj->getX();
+				int yLoc = obj->getY();
+				int layer = obj->getLayer();
+				Image* image = obj->getImage();
+				vector< vector<char> >* imageVector = image->getVector();
 
-			iter++; //increase
+				iter++; //increase
 
-			//loop trough y axis
-			if (imageVector.size() > 0) {
-				for (int i = 0; i < imageVector.size(); i++) {
-					int yPixLoc = yLoc + height - i;
-					if (!(yPixLoc < y + frameH && yPixLoc >= y)) continue;
+				//loop trough y axis
+				if (imageVector->size() > 0) {
+					for (int i = 0; i < imageVector->size(); i++) {
+						int yPixLoc = yLoc + obj->getHeight() - i;
+						if (!(yPixLoc < y + frameH && yPixLoc >= y)) continue;
 
-					//loop trough x axis and place into pixelarray
-					if (imageVector[i].size() > 0) {
-						for (int i2 = 0; i2 < imageVector[i].size(); i2++) {
-							int xPixLoc = xLoc + i2;
-							if (!(xPixLoc < x + frameW && xPixLoc >= x)) continue;
-							else {
-								char c = imageVector[i].at(i2);
-								char oldC = pixels[yPixLoc - y][xPixLoc - x];
-								if (c == emptyPixel) continue;
-								else if (oldC != emptyPixel) {
-									int prevLayer = pixelsLayer[yPixLoc - y][xPixLoc - x];
-									if (layer <= prevLayer) continue;
+						//loop trough x axis and place into pixelarray
+						if (imageVector->at(i).size() > 0) {
+							for (int i2 = 0; i2 < imageVector->at(i).size(); i2++) {
+								int xPixLoc = xLoc + i2;
+								if (!(xPixLoc < x + frameW && xPixLoc >= x)) continue;
+								else {
+									char c = imageVector->at(i)[i2];
+									char oldC = pixelMap->getValues(yPixLoc - y, xPixLoc - x).first;
+									if (c == emptyPixel) continue;
+									else if (oldC != emptyPixel) {
+										int prevLayer = pixelMap->getValues(yPixLoc - y, xPixLoc - x).second;
+										if (layer <= prevLayer) continue;
+									}
+									pixelMap->setValue(pair<char, int>(c, layer), yPixLoc - y, xPixLoc - x);
 								}
-								pixels[yPixLoc - y][xPixLoc - x] = c;
-								pixelsLayer[yPixLoc - y][xPixLoc - x] = layer;
 							}
 						}
 					}
 				}
 			}
+			else iter++;
 		}
 	}
 
@@ -99,7 +91,7 @@ void drawFrame() {
 	for (int yIn = 0; yIn < frameH; yIn++) {
 		stm << borderStr;
 		for (int xIn = 0; xIn < frameW; xIn++) {
-			char c = pixels[frameH - (yIn + 1)][xIn];
+			char c = pixelMap->getValues(frameH - (yIn + 1), xIn).first;
 			convertToColored(c, ' ', ' ', stm); //implement letter support / text support <-----------------
 		}
 		stm << borderStr << RESET << endl;
@@ -115,6 +107,8 @@ void drawFrame() {
 
 	//fix console writing/remove flicker and reset
 	ClearScreen();
+
+	pixelMap->clear();
 }
 
 //convert to colored

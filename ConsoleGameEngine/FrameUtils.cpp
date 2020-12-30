@@ -66,8 +66,8 @@ void updateFrameObjects() {
 	list<string>::iterator iter = objects.begin();
 
 	while (iter != objects.end()) {
-		GameObject obj = getGameObject(*iter);
-		registerObjectToFrame(*iter, obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth());
+		GameObject * obj = getGameObject(*iter);
+		registerObjectToFrame(*iter, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth());
 		iter++;
 	}
 }
@@ -96,11 +96,11 @@ void updateCloseToFrame() {
 		while (iter != mapObjects.end()) {
 			string objName = *iter;
 			if (!objName.empty()) {
-				GameObject obj = getGameObject(objName);
-				if (overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth())) {
+				GameObject * obj = getGameObject(objName);
+				if (overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 					inFrame.push_back(objName);
 				}
-				else if (overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth(), updateOffset)) {
+				else if (overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), updateOffset)) {
 					closeToFrame.push_back(objName);
 				}
 				else {
@@ -116,8 +116,8 @@ void updateCloseToFrame() {
 		while (iter2 != mapObjects2.end()) {
 			string objName = *iter2;
 			if (!objName.empty()) {
-				GameObject obj = getGameObject(objName);
-				if (!overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth())) {
+				GameObject * obj = getGameObject(objName);
+				if (!overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 					closeToFrame.push_back(objName);
 				}
 				else {
@@ -161,13 +161,13 @@ void updateCameraMovementFrameFinal() {
 		vector<string>::iterator iter = mapObjects.begin();
 		while (iter != mapObjects.end()) {
 			string objName = *iter;
-			GameObject obj = getGameObject(objName);
+			GameObject * obj = getGameObject(objName);
 			//to frame
-			if (overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth())) {
+			if (overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 				inFrame.push_back(objName);
 			}
 			//away from close to frame
-			else if (!overlapsFrame(obj.getX(), obj.getY(), obj.getHeight(), obj.getWidth(), updateOffset)) {
+			else if (!overlapsFrame(obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), updateOffset)) {
 				notInFrame.push_back(objName);
 			}
 			else {

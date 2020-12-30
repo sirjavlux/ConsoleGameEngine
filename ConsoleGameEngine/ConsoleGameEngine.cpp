@@ -63,7 +63,7 @@ bool hasCameraObjectAttatched() {
 	return cameraFollowObject.length() > 0;
 }
 GameObject getCameraFollowObject() {
-	return getGameObject(cameraFollowObject);
+	return *getGameObject(cameraFollowObject);
 }
 //update camera follow 
 void updateCamera() {

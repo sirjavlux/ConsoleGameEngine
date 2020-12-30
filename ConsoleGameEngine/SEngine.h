@@ -19,7 +19,7 @@ private:
 public:
 	Image();
 	void addLine(std::string line);
-	std::vector<std::vector<char>> getVector();
+	std::vector<std::vector<char>> * getVector();
 	int calcWidth();
 	int calcHeight();
 };
@@ -48,11 +48,11 @@ public:
 	int getHeight();
 	int getWidth();
 	void updateImage(Image image);
-	Image getImage();
+	Image * getImage();
 };
 
 void removeGameObject(GameObject * obj);
-GameObject getGameObject(std::string name);
+GameObject * getGameObject(std::string name);
 
 /*///////////////////////////
 * SCENE CLASS AND FUNCTIONS

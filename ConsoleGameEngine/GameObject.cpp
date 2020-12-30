@@ -13,8 +13,8 @@ using namespace std;
 
 std::map<std::string, GameObject*> * objectMap = new std::map<std::string, GameObject*>();
 
-GameObject getGameObject(string name) {
-	return *objectMap->at(name);
+GameObject * getGameObject(string name) {
+	return objectMap->at(name);
 }
 
 void removeGameObject(GameObject * obj) {
@@ -104,6 +104,6 @@ void GameObject::updateImage(Image newImage) {
 	w = newImage.calcWidth();
 }
 //get image
-Image GameObject::getImage() {
-	return image;
+Image * GameObject::getImage() {
+	return &image;
 }

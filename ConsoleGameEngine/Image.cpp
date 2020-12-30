@@ -17,8 +17,8 @@ void Image::addLine(string line) {
 	image.push_back(chars);
 }
 //get image vector
-vector< vector<char> > Image::getVector() {
-	return image;
+vector< vector<char> > * Image::getVector() {
+	return &image;
 }
 //calculate width/height
 int Image::calcWidth() {
