@@ -8,15 +8,14 @@
 #include <list>
 #include <Windows.h>
 #include <thread>
-#include <Bits.h>
+#include <wingdi.h>
+#include <cstdint>
 
 #include "SEngine.h"
 #include "Utils.h"
 #include "DefinedImageColors.h"
 
 using namespace std;
-
-COLORREF COLOR = RGB(255, 160, 100);
 
 //draw frame on console
 void drawFrame(SEngine * engine) {
@@ -32,8 +31,12 @@ void drawFrame(SEngine * engine) {
 
 	const int startSize = frame->size();
 
-	HWND myconsole = GetConsoleWindow();
-	HDC mydc = GetDC(myconsole);
+	//setup final draw
+	HDC hDC = engine->getDC();
+
+	const int size = width * height * 3;
+	byte* data;
+	data = new byte[size]{};
 
 	//make this faster 1160
 	for (int it = 0; it < startSize; it++) {
@@ -52,8 +55,9 @@ void drawFrame(SEngine * engine) {
 
 		//loop trough y axis
 		if (imageVector->size() > 0) {
+
 			for (int i = 0; i < imageVector->size(); i++) {
-				int yPixLoc = yLoc + obj->getHeight() - i;
+				int yPixLoc = (yLoc + i) * scale;
 				if (!(yPixLoc < y + height && yPixLoc >= y)) continue;
 				if (imageVector->at(i)->size() > 0) {
 					for (int i2 = 0; i2 < imageVector->at(i)->size(); i2++) {
@@ -61,18 +65,17 @@ void drawFrame(SEngine * engine) {
 						Pixel* pixel = imageVector->at(i)->at(i2);
 						COLORREF color = pixel->getColor();
 						for (int p = 0; p < pixel->getLenght(); p++) {
-							int xPixLoc = xLoc + pixel->getOffset() + p;
+							int xPixLoc = (xLoc + pixel->getOffset() + p) * scale;
 							if (xPixLoc < x + width && xPixLoc >= x) {
 								for (int i3 = 0; i3 < scale; i3++) {
 									for (int i4 = 0; i4 < scale; i4++) {
-										int printLocX = xPixLoc * scale - x + i4;
-										int printLocY = yPixLoc * scale - y + i3;
-										//render
-										SetPixel(mydc, printLocX, printLocY, color);
-
-										/*//////////////////////////////////
-										Need to fix bitmap rendering
-										*///////////////////////////////////
+										int printLocX = xPixLoc - x + i4;
+										int printLocY = yPixLoc - y + i3;
+										if (printLocY >= height - 1 && printLocY >= 0) continue;
+										//allocate pixels
+										data[printLocY * 3 * width + printLocX * 3] = 255; // blue
+										data[printLocY * 3 * width + printLocX * 3 + 1] = 0; // green
+										data[printLocY * 3 * width + printLocX * 3 + 2] = 160; // red
 									}
 								}
 							}
@@ -83,8 +86,25 @@ void drawFrame(SEngine * engine) {
 		}
 	}
 
+	//draw pixels
+	BITMAPINFOHEADER bmih;
+	bmih.biBitCount = 24;
+	bmih.biClrImportant = 0;
+	bmih.biClrUsed = 0;
+	bmih.biCompression = BI_RGB;
+	bmih.biWidth = width;
+	bmih.biHeight = height;
+	bmih.biPlanes = 1;
+	bmih.biSize = 40;
+	bmih.biSizeImage = size;
+
+	BITMAPINFO bmpi;
+	bmpi.bmiHeader = bmih;
+	SetDIBitsToDevice(hDC, 0, 0, width, height, 0, 0, 0, height, data, &bmpi, DIB_RGB_COLORS);
+	delete[] data;
+
 	//print underneth text
-	cout << getBottomTextBox();
+	cout << getBottomTextBox() << " " << width << " : " << height;
 
 	//fix console writing/remove flicker and reset
 	ClearScreen();

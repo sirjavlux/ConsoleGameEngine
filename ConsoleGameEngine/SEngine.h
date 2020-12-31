@@ -118,6 +118,7 @@ public:
 	void setCameraFollowOffsetY(int amount);
 	bool isGameRunning();
 	HDC getDC();
+	HWND getWindow();
 	void shutdown();
 };
 

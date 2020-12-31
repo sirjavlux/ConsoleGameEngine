@@ -75,7 +75,7 @@ SEngine::SEngine(int maxTickSpeed, int maxDrawSpeed, int pixelScale) {
 }
 SEngine::SEngine() {
 	//set up variables
-	SEngine::pixelScale = 4;
+	SEngine::pixelScale = 10;
 	running = true;
 	tickSpeed = 20, drawSpeed = 120;
 	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
@@ -157,6 +157,10 @@ bool SEngine::isGameRunning() {
 HDC SEngine::getDC() {
 	return mydc;
 }
+HWND SEngine::getWindow() {
+	return myconsole;
+}
+
 void SEngine::shutdown() {
 	running = false;
 	keyInput->detach();
