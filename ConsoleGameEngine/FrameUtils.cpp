@@ -8,6 +8,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include<cmath>
 
 #include "SEngine.h"
 #include "Utils.h"
@@ -31,11 +32,12 @@ bool overlapsFrame(SEngine* engine, int x, int y, int h, int w) {
 	int frameY1 = cameraY; int frameY2 = cameraY + height;
 
 	//object coordinates
-	int x1 = x; int x2 = x + w;
-	int y1 = y; int y2 = y + h;
+	int scale = engine->getPixelScale();
+	int x1 = x * scale - cameraX; int x2 = x * scale - cameraX + w * scale;
+	int y1 = y * scale - cameraY; int y2 = y * scale - cameraY + h * scale;
 
-	if (x2 < frameX1 || x1 > frameX2) return false;
-	else if (y2 < frameY1 || y1 > frameY2) return false;
+	if (x1 > width || x2 < 0) return false;
+	else if (y2 < 0 || y1 > height) return false;
 	else return true;
 }
 
@@ -50,11 +52,12 @@ bool overlapsFrame(SEngine* engine, int x, int y, int h, int w, int offset) {
 	int frameY1 = cameraY; int frameY2 = cameraY + height;
 
 	//object coordinates
-	int x1 = x; int x2 = x + w;
-	int y1 = y; int y2 = y + h;
+	int scale = engine->getPixelScale();
+	int x1 = x * scale - cameraX; int x2 = x * scale - cameraX + w * scale;
+	int y1 = y * scale - cameraY; int y2 = y * scale - cameraY + h * scale;
 
-	if (x2 < frameX1 - offset || x1 > frameX2 + offset) return false;
-	else if (y2 < frameY1 - offset || y1 > frameY2 + offset) return false;
+	if (x1 > width + offset * scale || x2 < 0 - offset * scale) return false;
+	else if (y2 < 0 - offset * scale || y1 > height + offset * scale) return false;
 	else return true;
 }
 
@@ -106,7 +109,7 @@ void updateCloseToFrame(SEngine * engine) {
 				if (overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth())) {
 					inFrame.push_back(objName);
 				}
-				else if (overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), getScreenWidth() / 4)) {
+				else if (overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), sqrt(getScreenWidth() * getScreenHeight()) / 2)) {
 					closeToFrame.push_back(objName);
 				}
 				else {
@@ -146,7 +149,7 @@ void registerObjectToFrame(SEngine * engine, std::string n, int x, int y, int h,
 	if (overlapsFrame(engine, x, y, h, w)) {
 		inFrame.push_back(n);
 	}
-	else if (overlapsFrame(engine, x, y, h, w, getScreenWidth() / 4)) {
+	else if (overlapsFrame(engine, x, y, h, w, sqrt(getScreenWidth() * getScreenHeight()) / 2)) {
 		closeToFrame.push_back(n);
 	}
 	else {
@@ -173,7 +176,7 @@ void updateCameraMovementFrameFinal(SEngine * engine) {
 				inFrame.push_back(objName);
 			}
 			//away from close to frame
-			else if (!overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), getScreenWidth() / 4)) {
+			else if (!overlapsFrame(engine, obj->getX(), obj->getY(), obj->getHeight(), obj->getWidth(), sqrt(getScreenWidth() * getScreenHeight()) / 2)) {
 				notInFrame.push_back(objName);
 			}
 			else {
