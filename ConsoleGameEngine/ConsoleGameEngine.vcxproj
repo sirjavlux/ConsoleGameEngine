@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ButtonInput.cpp" />
+    <ClCompile Include="ImageColorMap.cpp" />
     <ClCompile Include="ConsoleGameEngine.cpp" />
     <ClCompile Include="Events.cpp" />
     <ClCompile Include="Exceptions.cpp" />

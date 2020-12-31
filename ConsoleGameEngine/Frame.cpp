@@ -52,25 +52,28 @@ void drawFrame(SEngine * engine) {
 		//loop trough y axis
 		if (imageVector->size() > 0) {
 			for (int i = 0; i < imageVector->size(); i++) {
-				int yPixLoc = yLoc + i;
+				int yPixLoc = (yLoc + i) * scale;
 				if (!(yPixLoc < y + height && yPixLoc >= y)) continue;
 				if (imageVector->at(i)->size() > 0) {
 					for (int i2 = 0; i2 < imageVector->at(i)->size(); i2++) {
 						//render pixels
 						Pixel* pixel = imageVector->at(i)->at(i2);
 						COLORREF color = pixel->getColor();
+						int red = GetRValue(color);
+						int green = GetGValue(color);
+						int blue = GetBValue(color);
 						for (int p = 0; p < pixel->getLenght(); p++) {
-							int xPixLoc = xLoc + pixel->getOffset() + p;
-							if (xPixLoc * scale < x + width && xPixLoc * scale > x) {
+							int xPixLoc = (xLoc + pixel->getOffset() + p) * scale;
+							if (xPixLoc < x + width && xPixLoc > x) {
 								for (int i3 = 0; i3 < scale; i3++) {
 									for (int i4 = 0; i4 < scale; i4++) {
-										int printLocX = xPixLoc * scale - x + i4;
-										int printLocY = yPixLoc * scale - y + i3;
-										if (printLocY >= height - 1 && printLocY >= 0) continue;
+										int printLocX = xPixLoc - x + i4;
+										int printLocY = yPixLoc - y + i3;
+										if (printLocY >= height - 1 || printLocY <= 0) continue;
 										//allocate pixels
-										data[printLocY * 3 * width + printLocX * 3] = 255; // blue
-										data[printLocY * 3 * width + printLocX * 3 + 1] = 0; // green
-										data[printLocY * 3 * width + printLocX * 3 + 2] = 160; // red
+										data[printLocY * 3 * width + printLocX * 3] = blue; // blue
+										data[printLocY * 3 * width + printLocX * 3 + 1] = green; // green
+										data[printLocY * 3 * width + printLocX * 3 + 2] = red; // red
 									}
 								}
 							}
@@ -118,7 +121,6 @@ void startConsoleDraw(SEngine* engine) {
 
 		//get end time
 		auto end = std::chrono::steady_clock::now();
-
 
 		//get time differance
 		double elapsedTime = double(std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count());

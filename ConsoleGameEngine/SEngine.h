@@ -10,6 +10,8 @@
 #include <Windows.h>
 #include <thread>
 
+#include "Utils.h"
+
 /*///////////////////////////
 * PIXEL
 *////////////////////////////
@@ -40,7 +42,9 @@ class Image
 {
 private:
 	std::vector<std::vector<Pixel*>*> * image;
+	ImageColorMap* cMap;
 public:
+	Image(ImageColorMap * colorMap);
 	Image();
 	void addLine(std::string line);
 	std::vector<std::vector<Pixel*>*> *& getVector();

@@ -9,7 +9,6 @@
 #include "SEngine.h"
 #include "Utils.h"
 
-
 using namespace std;
 
 void startCheckingKeyInput(SEngine * engine);
@@ -186,9 +185,15 @@ int main()
 	//set start scene and active
 	setActiveStartScene(scene);
 
+	//create color map
+	ImageColorMap cMap;
+	cMap.setColor('B', RGB(0, 0, 255));
+	cMap.setColor('G', RGB(0, 255, 0));
+	cMap.setColor('R', RGB(255, 0, 0));
+
 	//test object
 	GameObject* obj = new GameObject(2, 4, 1, "test");
-	Image image;
+	Image image(&cMap);
 	image.addLine("GGGGGGG");
 	image.addLine("  GGG  ");
 	image.addLine(" GGGGG ");
@@ -198,8 +203,8 @@ int main()
 
 	//test object 2
 	GameObject* obj3 = new GameObject(0, 6, 2, "line");
-	Image image3;
-	image3.addLine("BBBBBBBBBBBBBBBBBBRRRRRRRRRRRRRRRRRRRR");
+	Image image3(&cMap);
+	image3.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
 	obj3->updateImage(image3); 
 	registerGameObject(obj3, scene);
 
@@ -209,7 +214,7 @@ int main()
 		stm << "performance" << i;
 		string name = stm.str();
 		GameObject * obj2 = new GameObject(100, 8, 3, name);
-		Image image2;
+		Image image2(&cMap);
 		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR"); 
 		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
 		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");

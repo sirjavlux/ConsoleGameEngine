@@ -1,8 +1,8 @@
 #ifndef LOG
 
 #include <iostream>
-
-#include "SEngine.h"
+#include <map>
+#include <Windows.h>
 
 #define LOG(x) cout << x << endl;
 
@@ -30,6 +30,19 @@ public:
 	void clear() {
 		memset(pairArr, 0, sizeof(pairArr));
 	}
+};
+
+/*////////////////////////
+* Color Map Struct
+*/////////////////////////
+
+class ImageColorMap {
+private:
+	std::map<char, COLORREF> map;
+public:
+	ImageColorMap();
+	COLORREF getColor(char c);
+	void setColor(char c, COLORREF color);
 };
 
 #endif
