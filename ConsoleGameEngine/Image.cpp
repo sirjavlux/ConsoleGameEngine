@@ -31,21 +31,27 @@ void Image::addLine(string line) {
 		}
 		if (c != oldC && oldC != ' ') {
 			//push and reset
-			Pixel * pixel = new Pixel();
-			pixel->setLenght(lenght);
-			pixel->setColor(cMap->getColor(oldC));
-			pixel->setOffset(offset);
-			pixels->push_back(pixel);
+			COLORREF color = cMap->getColor(oldC);
+			if (color != RGB(0, 0, 0)) {
+				Pixel* pixel = new Pixel();
+				pixel->setLenght(lenght);
+				pixel->setColor(color);
+				pixel->setOffset(offset);
+				pixels->push_back(pixel);
+			}
 			lenght = 0;
 			offset = i;
 		}
 		else if (i + 1 == line.length()) {
 			//push and reset
-			Pixel* pixel = new Pixel();
-			pixel->setLenght(lenght + 1);
-			pixel->setColor(cMap->getColor(c));
-			pixel->setOffset(offset);
-			pixels->push_back(pixel);
+			COLORREF color = cMap->getColor(c);
+			if (color != RGB(0, 0, 0)) {
+				Pixel* pixel = new Pixel();
+				pixel->setLenght(lenght + 1);
+				pixel->setColor(color);
+				pixel->setOffset(offset);
+				pixels->push_back(pixel);
+			}
 			lenght = 0;
 		}
 		if (c == ' ') {

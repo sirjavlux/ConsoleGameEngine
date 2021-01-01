@@ -1,3 +1,4 @@
+#define _WIN32_WINNT 0x0500
 #include <iostream>
 #include <thread>
 #include <map>
@@ -74,7 +75,7 @@ SEngine::SEngine(int maxTickSpeed, int maxDrawSpeed, int pixelScale) {
 }
 SEngine::SEngine() {
 	//set up variables
-	SEngine::pixelScale = 20;
+	SEngine::pixelScale = 30;
 	running = true;
 	tickSpeed = 20, drawSpeed = 120;
 	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
@@ -202,7 +203,7 @@ int main()
 	registerGameObject(obj, scene);
 
 	//test object 2
-	GameObject* obj3 = new GameObject(0, 6, 2, "line");
+	GameObject* obj3 = new GameObject(0, 6, 0, "line");
 	Image image3(&cMap);
 	image3.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
 	obj3->updateImage(image3); 
@@ -213,17 +214,25 @@ int main()
 		stringstream stm;
 		stm << "performance" << i;
 		string name = stm.str();
-		GameObject * obj2 = new GameObject(100, 8, 3, name);
+		GameObject * obj2 = new GameObject(0, 8, 3, name);
 		Image image2(&cMap);
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR"); 
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
-		image2.addLine("RRRR  RRR RRRRRRRRRRRRRRRRRRRR");
+		image2.addLine("RRRRRR RRRRRRRRRRRRBBBBBBBBB BBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBB  BBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRR  RRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRR  RRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRB  BBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRR  RRRRRRRRRRRRBBBBBBBBB   BBBBBBBBBBB");
+		image2.addLine("RRRRRRRR  RRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRR   RBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBB BBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRR  RRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBB BBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRR  RRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBB   BBBBBBBBB");
+		image2.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBB  BBBBBBBBBB");
 		obj2->updateImage(image2);
 		registerGameObject(obj2, scene);
 	}

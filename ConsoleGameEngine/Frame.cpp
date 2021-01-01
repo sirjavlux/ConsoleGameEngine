@@ -15,39 +15,80 @@
 #include "Utils.h"
 #include "DefinedImageColors.h"
 
-using namespace std;
+BITMAPINFOHEADER bmih;
+BITMAPINFO bmpi;
+int oldSize = getScreenWidth() * getScreenHeight() * 3;
+byte* data = new byte[oldSize]{};
 
-//draw frame on console
-void drawFrame(SEngine * engine) {
+//set to image map
+void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int scale, int lenght, COLORREF color) {
+	const int red = GetRValue(color);
+	const int green = GetGValue(color);
+	const int blue = GetBValue(color);
+	const int startPrintX = (xPixLoc - x) * 3;
+	const int row = 3 * width;
+	int printLoc = (yPixLoc - y) * 3 * width + (xPixLoc - x) * 3; // calculate start print location
+	const int startRow = printLoc / row;
+	const int pixelLenght = scale * lenght;
+	const int pixelColorLenght = pixelLenght * 3;
+	int index = 0;
+	const int outOfFrameCheck = row - startPrintX;
+	for (int i3 = 0; i3 < scale; i3++) {
+		if (startRow + i3 >= height - 1 || startRow + i3 <= 0) continue;
+		for (int i4 = 0; i4 < pixelLenght; i4++) {
+			if (index + 2 > outOfFrameCheck) {
+				break;
+			}
+			int loc = printLoc + index;
+			data[loc] = blue; // blue
+			data[loc + 1] = green; // green
+			data[loc + 2] = red; // red
 
-	int width = getScreenWidth();
-	int height = getScreenHeight();
-	int scale = engine->getPixelScale();
+			index += 3; // increase to next pixel index
+		}
+		printLoc += row; // increase to next row
+		index = 0;
+	}
+}
 
-	int x = engine->getCameraX() - width / 2;
-	int y = engine->getCameraY() - height / 2;
+//update frame size data
+void updateFrameDrawSize(int width, int height) {
+	int size = width * height * 3;
+	bmih.biWidth = width;
+	bmih.biHeight = height;
+	bmih.biSizeImage = size;
+	delete[] data;
+	data = new byte[size]{};
+	oldSize = size;
+}
 
-	vector<string> * frame = getInFrame();
+//reset old data
+void resetPixelData(int size) {
+	memset(data, 0, size * sizeof(*data));
+}
 
-	const int startSize = frame->size();
+//draw pixels
+void drawPixelsToScreen(SEngine * engine, int width, int height) {
+	bmpi.bmiHeader = bmih;
+	SetDIBitsToDevice(engine->getDC(), 0, 0, width, height, 0, 0, 0, height, data, &bmpi, DIB_RGB_COLORS);
+}
 
-	const int size = width * height * 3;
-	byte* data = new byte[size]{};
+//calculate pixels based on object images
+void calculateImages(int layer, std::map<int, std::vector<std::string>> * frame, int from, int to, int scale, int width, int height, int x, int y) {
 
-	//make this faster 1160
-	for (int it = 0; it < startSize; it++) {
+	for (int it = from; it < to; it++) {
 		//variables
 		GameObject* obj;
 		try {
-			obj = getGameObject(frame->at(it));
-		} 
-		catch (exception) { continue; }
+			obj = getGameObject(frame->at(layer).at(it));
+		}
+		catch (std::exception) { continue; }
 
 		int xLoc = obj->getX();
 		int yLoc = obj->getY();
 		int layer = obj->getLayer();
 		Image* image = obj->getImage();
-		vector< vector<Pixel* >* >* imageVector = image->getVector();
+		std::vector< std::vector<Pixel* >* >* imageVector = image->getVector();
 
 		//loop trough y axis
 		if (imageVector->size() > 0) {
@@ -61,51 +102,57 @@ void drawFrame(SEngine * engine) {
 						//render pixels
 						Pixel* pixel = imageVector->at(row)->at(i2);
 						COLORREF color = pixel->getColor();
-						int red = GetRValue(color);
-						int green = GetGValue(color);
-						int blue = GetBValue(color);
-						for (int p = 0; p < pixel->getLenght(); p++) {
-							int xPixLoc = (xLoc + pixel->getOffset() + p) * scale;
-							if (xPixLoc < x + width + scale && xPixLoc + scale > x) {
-								for (int i3 = 0; i3 < scale; i3++) {
-									for (int i4 = 0; i4 < scale; i4++) {
-										int printLocX = xPixLoc - x + i4;
-										int printLocY = yPixLoc - y + i3;
-										if (printLocY >= height - 1 || printLocY <= 0) continue;
-										if (printLocX >= width - 1 || printLocX <= 0) continue;
-										//allocate pixels
-										data[printLocY * 3 * width + printLocX * 3] = blue; // blue
-										data[printLocY * 3 * width + printLocX * 3 + 1] = green; // green
-										data[printLocY * 3 * width + printLocX * 3 + 2] = red; // red
-									}
-								}
-							}
-						}
+						//allocate pixels
+						setPixel((xLoc + pixel->getOffset()) * scale, yPixLoc, x, y, width, height, scale, pixel->getLenght(), color);
 					}
 				}
 			}
 		}
 	}
+}
 
-	//draw pixels
-	BITMAPINFOHEADER bmih;
-	bmih.biBitCount = 24;
-	bmih.biClrImportant = 0;
-	bmih.biClrUsed = 0;
-	bmih.biCompression = BI_RGB;
-	bmih.biWidth = width;
-	bmih.biHeight = height;
-	bmih.biPlanes = 1;
-	bmih.biSize = 40;
-	bmih.biSizeImage = size;
+//draw frame on console
+void drawFrame(SEngine * engine) {
 
-	BITMAPINFO bmpi;
-	bmpi.bmiHeader = bmih;
-	SetDIBitsToDevice(engine->getDC(), 0, 0, width, height, 0, 0, 0, height, data, &bmpi, DIB_RGB_COLORS);
-	delete[] data;
+	int width = getScreenWidth();
+	int height = getScreenHeight();
+	int scale = engine->getPixelScale();
+
+	//setup pixel drawing
+	int size = width * height * 3;
+	if (size != oldSize) {
+		updateFrameDrawSize(width, height);
+	}
+	else {
+		resetPixelData(size);
+	}
+
+	int x = engine->getCameraX() - width / 2;
+	int y = engine->getCameraY() - height / 2;
+
+	std::map<int, std::vector<std::string>> frame = *getInFrame();
+	std::map<int, std::vector<std::string>>::iterator iter = frame.begin();
+
+	while (iter != frame.end()) {
+		const int layer = (*iter).first;
+		const int startSize = frame.at(layer).size();
+		if (startSize > 10) {
+			std::thread renderer1(calculateImages, layer, &frame, 0, (int)startSize / 2, scale, width, height, x, y);
+			std::thread renderer2(calculateImages, layer, &frame, (int)startSize / 2, startSize, scale, width, height, x, y);
+			renderer1.join();
+			renderer2.join();
+		}
+		else {
+			calculateImages(layer, &frame, 0, (int)startSize, scale, width, height, x, y);
+		}
+		iter++;
+	}
+
+	//draw frame
+	drawPixelsToScreen(engine, width, height);
 
 	//print underneth text
-	cout << getBottomTextBox() << " " << width << " : " << height;
+	std::cout << getBottomTextBox() << " " << width << " : " << height;
 
 	//fix console writing/remove flicker and reset
 	ClearScreen();
@@ -113,6 +160,14 @@ void drawFrame(SEngine * engine) {
 
 //frame drawing loop
 void startConsoleDraw(SEngine* engine) {
+	//setup bmih
+	bmih.biBitCount = 24;
+	bmih.biClrImportant = 0;
+	bmih.biClrUsed = 0;
+	bmih.biCompression = BI_RGB;
+	bmih.biPlanes = 1;
+	bmih.biSize = 40;
+	updateFrameDrawSize(getScreenWidth(), getScreenHeight());
 	//run core loop
 	while (engine->isGameRunning() == true) {
 
@@ -128,8 +183,8 @@ void startConsoleDraw(SEngine* engine) {
 		//get time differance
 		double elapsedTime = double(std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count());
 
-		stringstream stm;
-		stm << "FPS " << (int)(1000 / elapsedTime) << " : Load Time " << elapsedTime << endl;
+		std::stringstream stm;
+		stm << "FPS " << (int)(1000 / elapsedTime) << " : Load Time " << elapsedTime << std::endl;
 		setBottomTextBox(stm.str());
 	}
 }
