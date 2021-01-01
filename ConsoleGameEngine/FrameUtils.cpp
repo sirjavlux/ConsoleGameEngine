@@ -23,8 +23,8 @@ string textBox = "";
 
 //check if gameobject overlaps frame
 bool overlapsFrame(SEngine* engine, int x, int y, int h, int w) {
-	int width = getScreenWidth();
-	int height = getScreenHeight();
+	int width = getScreenWidth() * 1.5;
+	int height = getScreenHeight() * 1.5;
 	//frame coordinates
 	int cameraX = engine->getCameraX() - width / 2;
 	int cameraY = engine->getCameraY() - height / 2;
@@ -43,8 +43,8 @@ bool overlapsFrame(SEngine* engine, int x, int y, int h, int w) {
 
 //check if gameobject overlaps frame with offset
 bool overlapsFrame(SEngine* engine, int x, int y, int h, int w, int offset) {
-	int width = getScreenWidth();
-	int height = getScreenHeight();
+	int width = getScreenWidth() * 1.5;
+	int height = getScreenHeight() * 1.5;
 	//frame coordinates
 	int cameraX = engine->getCameraX() - width / 2;
 	int cameraY = engine->getCameraY() - height / 2;

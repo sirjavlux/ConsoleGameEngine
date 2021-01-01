@@ -74,7 +74,7 @@ SEngine::SEngine(int maxTickSpeed, int maxDrawSpeed, int pixelScale) {
 }
 SEngine::SEngine() {
 	//set up variables
-	SEngine::pixelScale = 10;
+	SEngine::pixelScale = 20;
 	running = true;
 	tickSpeed = 20, drawSpeed = 120;
 	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
