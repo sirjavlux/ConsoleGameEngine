@@ -132,18 +132,37 @@ void drawFrame(SEngine * engine) {
 
 	std::map<int, std::vector<std::string>> frame = *getInFrame();
 	std::map<int, std::vector<std::string>>::iterator iter = frame.begin();
-
+	
 	while (iter != frame.end()) {
 		const int layer = (*iter).first;
 		const int startSize = frame.at(layer).size();
-		if (startSize > 10) {
-			std::thread renderer1(calculateImages, layer, &frame, 0, (int)startSize / 2, scale, width, height, x, y);
-			std::thread renderer2(calculateImages, layer, &frame, (int)startSize / 2, startSize, scale, width, height, x, y);
-			renderer1.join();
-			renderer2.join();
+
+		//calculate lines
+		int lines = 0;
+		for (int i = 0; i < startSize; i++) {
+			lines += (*iter).second.at(i).size();
+		}
+		//calculate threads needed
+		const int threadCap = 8;
+		int threadsToUse = lines / 150;
+		if (threadsToUse > threadCap) threadsToUse = threadCap;
+		else if (threadsToUse < 1) threadsToUse = 1;
+		if (threadsToUse == 1) {
+			calculateImages(layer, &frame, 0, (int)startSize, scale, width, height, x, y);
 		}
 		else {
-			calculateImages(layer, &frame, 0, (int)startSize, scale, width, height, x, y);
+			std::vector<std::thread> threads;
+			//do tasks
+			double increment = 1.0 / threadsToUse;
+			double begin = 0;
+			for (int i = 0; i < threadsToUse; i++) {
+				threads.push_back(std::thread(calculateImages, layer, &frame, (int)startSize * begin, (int)startSize * (begin + increment), scale, width, height, x, y));
+				begin += increment;
+			}
+			//finish tasks 
+			for (int i = 0; i < threadsToUse; i++) {
+				threads.at(i).join();
+			}
 		}
 		iter++;
 	}
@@ -152,7 +171,7 @@ void drawFrame(SEngine * engine) {
 	drawPixelsToScreen(engine, width, height);
 
 	//print underneth text
-	std::cout << getBottomTextBox() << " " << width << " : " << height;
+	std::cout << " " << getBottomTextBox() << " " << width << " : " << height;
 
 	//fix console writing/remove flicker and reset
 	ClearScreen();
