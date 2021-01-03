@@ -6,6 +6,8 @@
 #include <string>
 #include <chrono>
 #include <sstream>
+#include <tchar.h>
+#include <string>
 
 #include "SEngine.h"
 #include "Utils.h"
@@ -16,9 +18,22 @@ void startCheckingKeyInput(SEngine * engine);
 void startConsoleDraw(SEngine* engine);
 void startPhysics(SEngine* engine);
 
+//temp event
+void pressedKeyEvent(SEngine* engine);
+//update events function
+void updateEvents(SEngine* engine) {
+	if (*getLastKeyPressed() > 0) pressedKeyEvent(engine); //fire if key was pressed
+}
+
+//Get a console handle
+HWND myconsole = GetConsoleWindow();
+
 void startCoreLoop(SEngine* engine) {
 	//run core loop
 	while (engine->isGameRunning()) {
+
+		//remove scrollbar
+		ShowScrollBar(myconsole, SB_BOTH, FALSE);
 
 		//start time
 		auto start = std::chrono::steady_clock::now();
@@ -41,53 +56,45 @@ void startCoreLoop(SEngine* engine) {
 	}
 }
 
-//Get a console handle
-HWND myconsole = GetConsoleWindow();
-
 /*///////////////////////////////
 * MANAGE TICKSPEEDS
 *////////////////////////////////
 int SEngine::getTickSpeed() {
 	return tickSpeed;
 }
-int SEngine::getDrawSpeed() {
-	return drawSpeed;
-}
 void SEngine::setTickSpeed(int amount) {
 	tickSpeed = amount;
-}
-void SEngine::setDrawSpeed(int amount) {
-	drawSpeed = amount;
 }
 /*///////////////////////////////
 * CONSTRUCTOR, DESTRUCTOR, GAMELOOP
 *////////////////////////////////
-SEngine::SEngine(int maxTickSpeed, int maxDrawSpeed, int pixelScale) {
-	//set up variables
-	SEngine::pixelScale = pixelScale;
-	running = true;
-	tickSpeed = maxTickSpeed, drawSpeed = maxDrawSpeed;
-	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
-	cameraFollowObject = "";
-	mydc = GetDC(myconsole);
-	//start game loop
-	startGame();
-}
 SEngine::SEngine() {
 	//set up variables
-	SEngine::pixelScale = 30;
+	SEngine::pixelScale = 10;
 	running = true;
-	tickSpeed = 20, drawSpeed = 120;
+	tickSpeed = 10;
 	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
 	cameraFollowObject = "";
 	mydc = GetDC(myconsole);
-	//start game loop
-	startGame();
+	SEngine::name = "ConsoleGameEngine";
+	started = false;
 }
+void onDisable();
 SEngine::~SEngine() {
-
+	onDisable();
+}
+string SEngine::getName() {
+	return name;
 }
 void SEngine::startGame() {
+	if (started) {
+		return;
+	}
+	else {
+		started = true;
+	}
+	//set title
+	SetConsoleTitleA(name.c_str());
 	//iniciate keyInput thread
 	keyInput = new thread(startCheckingKeyInput, this);
 	//iniciate draw thread
@@ -96,9 +103,6 @@ void SEngine::startGame() {
 	physics = new thread(startPhysics, this);
 	//iniciate find objects in frame
 	frames = new thread(findObjectsInFrame, this);
-
-	//remove scrollbar
-	ShowScrollBar(myconsole, SB_BOTH, FALSE);
 
 	//activate startscreen
 	if (getActiveStartScene() != nullptr) setActiveScene(this, getActiveStartScene());
@@ -121,8 +125,8 @@ void SEngine::teleportCamera(int x, int y) {
 	cameraY = y;
 	updateCameraMovementFrame();
 }
-void SEngine::setCameraFollow(GameObject obj) {
-	cameraFollowObject = obj.getName();
+void SEngine::setCameraFollow(GameObject * obj) {
+	cameraFollowObject = obj->getName();
 }
 void SEngine::cancelCameraFollow() {
 	cameraFollowObject = "";
@@ -151,6 +155,10 @@ void SEngine::updateCamera() {
 /*///////////////////////////////
 * MANAGING
 *////////////////////////////////
+void SEngine::setName(std::string name) {
+	SEngine::name = name;
+	SetConsoleTitleA(name.c_str());
+}
 bool SEngine::isGameRunning() {
 	return running;
 }
@@ -178,75 +186,16 @@ void SEngine::setPixelScale(int scale) {
 	pixelScale = scale;
 }
 
+void onEnable(SEngine* engine);
 
 int main()
 {
-	//add scene
-	Scene* scene = new Scene("start_frame", 0, 0);
-	//set start scene and active
-	setActiveStartScene(scene);
-
-	//create color map
-	ImageColorMap cMap;
-	cMap.setColor('B', RGB(0, 0, 255));
-	cMap.setColor('G', RGB(0, 255, 0));
-	cMap.setColor('R', RGB(255, 0, 0));
-
-	//test object
-	GameObject* obj = new GameObject(2, 4, 1, "test");
-	Image image(&cMap);
-	image.addLine("GGGGGGG");
-	image.addLine("  GGG  ");
-	image.addLine(" GGGGG ");
-	image.addLine("GGGGGGG");
-	obj->updateImage(image);
-	registerGameObject(obj, scene);
-
-	//test object 2
-	GameObject* obj3 = new GameObject(0, 6, 0, "line");
-	Image image3(&cMap);
-	image3.addLine("RRRRRRRRRRRRRRRRRRBBBBBBBBBBBBBBBBBBBB");
-	obj3->updateImage(image3); 
-	registerGameObject(obj3, scene);
-
-	//performance test
-	for (int i = 0; i < 4; i++) {
-		stringstream stm;
-		stm << "performance" << i;
-		string name = stm.str();
-		GameObject * obj2 = new GameObject(0, 8, 3, name);
-		Image image2(&cMap);
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		image2.addLine("RGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGBRGB");
-		obj2->updateImage(image2);
-		registerGameObject(obj2, scene);
-	}
-
-	//test object 3
-	GameObject* obj4 = new GameObject(-10, -10, 0, "line2");
-	Image image4(&cMap);
-	image4.addLine("RRR GGG BBB");
-	obj4->updateImage(image4);
-	registerGameObject(obj4, scene);
-
-	//start engine
+	//create engine 
 	SEngine* engine = new SEngine();
+
+	//run on enable function
+	onEnable(engine);
+
+	//start game loop
+	engine->startGame();
 }

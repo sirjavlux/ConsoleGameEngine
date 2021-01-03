@@ -10,6 +10,7 @@
 #include <thread>
 #include <wingdi.h>
 #include <cstdint>
+#include <mutex>
 
 #include "SEngine.h"
 #include "Utils.h"
@@ -33,6 +34,7 @@ void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int
 	const int pixelColorLenght = pixelLenght * 3;
 	int index = 0;
 	const int outOfFrameCheck = row - startPrintX;
+	const int size = 3 * width * height;
 	for (int i3 = 0; i3 < scale; i3++) {
 		if (startRow + i3 >= height - 1 || startRow + i3 <= 0) continue;
 		for (int i4 = 0; i4 < pixelLenght; i4++) {
@@ -40,6 +42,9 @@ void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int
 				break;
 			}
 			int loc = printLoc + index;
+			if (loc + 3 > size || loc < 0) {
+				return;
+			}
 			data[loc] = blue; // blue
 			data[loc + 1] = green; // green
 			data[loc + 2] = red; // red
@@ -74,15 +79,20 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 }
 
 //calculate pixels based on object images
-void calculateImages(int layer, std::map<int, std::vector<std::string>> * frame, int from, int to, int scale, int width, int height, int x, int y) {
+void calculateImages(int layer, std::map<int, std::list<std::string>> * frame, int from, int to, int scale, int width, int height, int x, int y) {
 
-	for (int it = from; it < to; it++) {
+	int count = 0;
+	int toMove = to - from;
+	std::list<std::string>::iterator it = frame->at(layer).begin();
+	std::advance(it, from);
+	while (it != frame->at(layer).end()) {
 		//variables
 		GameObject* obj;
 		try {
-			obj = getGameObject(frame->at(layer).at(it));
+			obj = getGameObject(*it);
+			it++;
 		}
-		catch (std::exception) { continue; }
+		catch (std::exception) { continue; it++; }
 
 		int xLoc = obj->getX();
 		int yLoc = obj->getY();
@@ -108,6 +118,12 @@ void calculateImages(int layer, std::map<int, std::vector<std::string>> * frame,
 				}
 			}
 		}
+
+		//check if should end
+		if (count + 1 >= toMove) {
+			break;
+		}
+		count++;
 	}
 }
 
@@ -130,8 +146,8 @@ void drawFrame(SEngine * engine) {
 	int x = engine->getCameraX() - width / 2;
 	int y = engine->getCameraY() - height / 2;
 
-	std::map<int, std::vector<std::string>> frame = *getInFrame();
-	std::map<int, std::vector<std::string>>::iterator iter = frame.begin();
+	std::map<int, std::list<std::string>> frame = getInFrame();
+	std::map<int, std::list<std::string>>::iterator iter = frame.begin();
 	
 	while (iter != frame.end()) {
 		const int layer = (*iter).first;
@@ -139,8 +155,11 @@ void drawFrame(SEngine * engine) {
 
 		//calculate lines
 		int lines = 0;
-		for (int i = 0; i < startSize; i++) {
-			lines += (*iter).second.at(i).size();
+		std::list<std::string> * objects = &frame.at(layer);
+		std::list<std::string>::iterator it = objects->begin();
+		while (it != objects->end()) {
+			lines += (*it).size();
+			it++;
 		}
 		//calculate threads needed
 		const int threadCap = 8;

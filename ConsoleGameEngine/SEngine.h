@@ -94,27 +94,28 @@ private:
 	std::thread* draw;
 	std::thread* physics;
 	bool running;
-	int tickSpeed, drawSpeed;
+	int tickSpeed;
 	int cameraX, cameraY, cameraFollowOffsetX, cameraFollowOffsetY;
 	int pixelScale;
 	std::string cameraFollowObject;
+	std::string name;
 	HDC mydc;
-	void startGame();
+	bool started;
 public:
+	void startGame();
 	void updateCamera();
-	SEngine(int maxTickSpeed, int maxDrawSpeed, int pixelScale);
+	void setName(std::string name);
 	SEngine();
 	~SEngine();
+	std::string getName();
 	int getTickSpeed();
-	int getDrawSpeed();
 	void setTickSpeed(int amount);
-	void setDrawSpeed(int amount);
 	int getPixelScale();
 	void setPixelScale(int scale);
 	int getCameraX();
 	int getCameraY();
 	void teleportCamera(int x, int y);
-	void setCameraFollow(GameObject obj);
+	void setCameraFollow(GameObject * obj);
 	void cancelCameraFollow();
 	bool hasCameraObjectAttatched();
 	GameObject* getCameraFollowObject();
@@ -177,7 +178,7 @@ const char emptyPixel = ' ';
 void drawFrame(SEngine * engine);
 void setBottomTextBox(std::string str);
 std::string getBottomTextBox();
-std::map<int, std::vector<std::string>>* getInFrame();
+std::map<int, std::list<std::string>> getInFrame();
 void registerObjectToFrame(SEngine* engine, std::string n, int x, int y, int h, int w, int l);
 void updateObjectToFrame(GameObject obj);
 void updateCameraMovementFrame();
@@ -193,6 +194,34 @@ void updateEvents(SEngine* engine);
 /*///////////////////////////
 * PHYSICS
 *////////////////////////////
+
+class Vector2D {
+private:
+	int x, y;
+public:
+	Vector2D();
+	double getX();
+	double getY();
+	double getLenght();
+	void setX(double newX);
+	void setY(double newY);
+	void multiply(double amount);
+	void normalize();
+};
+
+class ObjectPhysics2D {
+private:
+	Vector2D vector2d;
+public:
+	ObjectPhysics2D();
+	void addForce(Vector2D velocity);
+	Vector2D * getVelocity();
+};
+
+class Colider2D {
+private:
+public:
+};
 
 /*///////////////////////////
 * EXCEPTIONS

@@ -147,6 +147,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Colider2D.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="ObjectPhysics2D.cpp" />
     <ClCompile Include="ButtonInput.cpp" />
     <ClCompile Include="ImageColorMap.cpp" />
     <ClCompile Include="ConsoleGameEngine.cpp" />
@@ -160,6 +163,7 @@
     <ClCompile Include="Pixel.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Vector2D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DefinedImageColors.h" />

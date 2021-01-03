@@ -44,8 +44,3 @@ void pressedKeyEvent(SEngine * engine) {
 
 	*lastKey = 0; //reset key
 }
-
-//update events
-void updateEvents(SEngine* engine) {
-	if (*getLastKeyPressed() > 0) pressedKeyEvent(engine); //fire if key was pressed
-}

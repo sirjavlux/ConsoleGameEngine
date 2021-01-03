@@ -25,6 +25,9 @@
     <Filter Include="Utils">
       <UniqueIdentifier>{bf4096b1-72ec-4984-aed6-f693b12e5fa7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{80bc81cb-b87e-4421-8ee0-e6f6adaa1970}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleGameEngine.cpp">
@@ -65,6 +68,18 @@
     </ClCompile>
     <ClCompile Include="ImageColorMap.cpp">
       <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectPhysics2D.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector2D.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Colider2D.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
+      <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
