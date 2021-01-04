@@ -23,22 +23,22 @@ byte* data = new byte[oldSize]{};
 
 //set to image map
 void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int scale, int lenght, COLORREF color) {
-	const int red = GetRValue(color);
-	const int green = GetGValue(color);
-	const int blue = GetBValue(color);
-	const int startPrintX = (xPixLoc - x) * 3;
+	const byte red = GetRValue(color);
+	const byte green = GetGValue(color);
+	const byte blue = GetBValue(color);
+	const int startPrintX = xPixLoc;
 	const int row = 3 * width;
 	int printLoc = (yPixLoc - y) * 3 * width + (xPixLoc - x) * 3; // calculate start print location
 	const int startRow = printLoc / row;
 	const int pixelLenght = scale * lenght;
 	const int pixelColorLenght = pixelLenght * 3;
 	int index = 0;
-	const int outOfFrameCheck = row - startPrintX;
 	const int size = 3 * width * height;
+	const int maxX = x + width;
 	for (int i3 = 0; i3 < scale; i3++) {
 		if (startRow + i3 >= height - 1 || startRow + i3 <= 0) continue;
 		for (int i4 = 0; i4 < pixelLenght; i4++) {
-			if (index + 2 > outOfFrameCheck) {
+			if (startPrintX + i4 >= maxX || startPrintX + i4 <= x) {
 				break;
 			}
 			int loc = printLoc + index;
@@ -78,21 +78,21 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 	SetDIBitsToDevice(engine->getDC(), 0, 0, width, height, 0, 0, 0, height, data, &bmpi, DIB_RGB_COLORS);
 }
 
-//calculate pixels based on object images
-void calculateImages(int layer, std::map<int, std::list<std::string>> * frame, int from, int to, int scale, int width, int height, int x, int y) {
+//calculate pixels based on object images <------------ Fix objects won't render to frame
+void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int x, int y) {
 
 	int count = 0;
 	int toMove = to - from;
-	std::list<std::string>::iterator it = frame->at(layer).begin();
+	std::list<GameObject*>::iterator it = frame[layer].begin();
 	std::advance(it, from);
-	while (it != frame->at(layer).end()) {
+	while (it != frame[layer].end()) {
 		//variables
-		GameObject* obj;
-		try {
-			obj = getGameObject(*it);
+		if (*it == nullptr) {
 			it++;
+			continue;
 		}
-		catch (std::exception) { continue; it++; }
+		GameObject* obj = *it;
+		it++;
 
 		int xLoc = obj->getX();
 		int yLoc = obj->getY();
@@ -146,8 +146,8 @@ void drawFrame(SEngine * engine) {
 	int x = engine->getCameraX() - width / 2;
 	int y = engine->getCameraY() - height / 2;
 
-	std::map<int, std::list<std::string>> frame = getInFrame();
-	std::map<int, std::list<std::string>>::iterator iter = frame.begin();
+	std::map<int, std::list<GameObject*>> frame = getInFrame();
+	std::map<int, std::list<GameObject*>>::iterator iter = frame.begin();
 	
 	while (iter != frame.end()) {
 		const int layer = (*iter).first;
@@ -155,19 +155,19 @@ void drawFrame(SEngine * engine) {
 
 		//calculate lines
 		int lines = 0;
-		std::list<std::string> * objects = &frame.at(layer);
-		std::list<std::string>::iterator it = objects->begin();
-		while (it != objects->end()) {
-			lines += (*it).size();
+		std::list<GameObject*>::iterator it = frame[layer].begin();
+		while (it != frame[layer].end()) {
+			lines += (*it)->getImage()->getVector()->size();
 			it++;
 		}
+
 		//calculate threads needed
 		const int threadCap = 8;
 		int threadsToUse = lines / 150;
 		if (threadsToUse > threadCap) threadsToUse = threadCap;
 		else if (threadsToUse < 1) threadsToUse = 1;
 		if (threadsToUse == 1) {
-			calculateImages(layer, &frame, 0, (int)startSize, scale, width, height, x, y);
+			calculateImages(layer, frame, 0, (int)startSize, scale, width, height, x, y);
 		}
 		else {
 			std::vector<std::thread> threads;
@@ -175,7 +175,7 @@ void drawFrame(SEngine * engine) {
 			double increment = 1.0 / threadsToUse;
 			double begin = 0;
 			for (int i = 0; i < threadsToUse; i++) {
-				threads.push_back(std::thread(calculateImages, layer, &frame, (int)startSize * begin, (int)startSize * (begin + increment), scale, width, height, x, y));
+				threads.push_back(std::thread(calculateImages, layer, frame, (int)startSize * begin, (int)startSize * (begin + increment), scale, width, height, x, y));
 				begin += increment;
 			}
 			//finish tasks 
