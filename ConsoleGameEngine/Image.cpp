@@ -70,7 +70,15 @@ int Image::calcWidth() {
 	vector < vector<Pixel*> * >::iterator iter = image->begin();
 	int widest = 0; 
 	while (iter != image->end()) {
-		widest = (*iter)->size() > widest ? (*iter)->size() : widest;
+		int size = 0;
+		vector<Pixel*> * pixels = *iter;
+		vector<Pixel*>::iterator iter2 = pixels->begin();
+		while (iter2 != pixels->end()) {
+			size += (*iter2)->getLenght();
+			iter2++;
+		}
+
+		if (size > widest) widest = size;
 		iter++;
 	}
 	return widest;

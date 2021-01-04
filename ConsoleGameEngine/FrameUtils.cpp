@@ -25,10 +25,13 @@ map<int, list<GameObject*>> inFrameUpdated;
 
 string textBox = "";
 
+//fix wierd out of frame bug <-----------------------
 //check if gameobject overlaps frame
 bool overlapsFrame(SEngine* engine, GameObject* obj) {
-	int width = getScreenWidth() * 1.5;
-	int height = getScreenHeight() * 1.5;
+
+	int width = getScreenWidth() * 1.2;
+	int height = getScreenHeight() * 1.2;
+
 	//frame coordinates
 	int cameraX = engine->getCameraX() - width / 2;
 	int cameraY = engine->getCameraY() - height / 2;
@@ -37,18 +40,18 @@ bool overlapsFrame(SEngine* engine, GameObject* obj) {
 
 	//object coordinates
 	int scale = engine->getPixelScale();
-	int x1 = obj->getX() * scale - cameraX; int x2 = obj->getX() * scale - cameraX + obj->getWidth() * scale;
-	int y1 = obj->getY() * scale - cameraY; int y2 = obj->getY() * scale - cameraY + obj->getHeight() * scale;
+	int x1 = obj->getX() * scale; int x2 = x1 + obj->getWidth() * scale;
+	int y1 = obj->getY() * scale; int y2 = y1 + obj->getHeight() * scale;
 
-	if (x1 > width || x2 < 0) return false;
-	else if (y2 < 0 || y1 > height) return false;
+	if (x1 >= frameX2 || x2 <= frameX1) return false;
+	else if (y2 <= frameY1 || y1 >= frameY2) return false;
 	else return true;
 }
 
 //check if gameobject overlaps frame with offset
 bool overlapsFrame(SEngine* engine, GameObject * obj, int offset) {
-	int width = getScreenWidth() * 1.5;
-	int height = getScreenHeight() * 1.5;
+	int width = getScreenWidth() * 1.2;
+	int height = getScreenHeight() * 1.2;
 	//frame coordinates
 	int cameraX = engine->getCameraX() - width / 2;
 	int cameraY = engine->getCameraY() - height / 2;
@@ -57,11 +60,11 @@ bool overlapsFrame(SEngine* engine, GameObject * obj, int offset) {
 
 	//object coordinates
 	int scale = engine->getPixelScale();
-	int x1 = obj->getX() * scale - cameraX; int x2 = obj->getX() * scale - cameraX + obj->getWidth() * scale;
-	int y1 = obj->getY() * scale - cameraY; int y2 = obj->getY() * scale - cameraY + obj->getHeight() * scale;
+	int x1 = obj->getX() * scale; int x2 = x1 + obj->getWidth() * scale;
+	int y1 = obj->getY() * scale; int y2 = y1 + obj->getHeight() * scale;
 
-	if (x1 > width + offset * scale || x2 < 0 - offset * scale) return false;
-	else if (y2 < 0 - offset * scale || y1 > height + offset * scale) return false;
+	if (x1 >= frameX2 + offset * scale || x2 <= frameX1 - offset * scale) return false;
+	else if (y2 <= frameY1 - offset * scale || y1 >= frameY2 + offset * scale) return false;
 	else return true;
 }
 

@@ -38,8 +38,12 @@ void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int
 	for (int i3 = 0; i3 < scale; i3++) {
 		if (startRow + i3 >= height - 1 || startRow + i3 <= 0) continue;
 		for (int i4 = 0; i4 < pixelLenght; i4++) {
-			if (startPrintX + i4 >= maxX || startPrintX + i4 <= x) {
+			if (startPrintX + i4 >= maxX) {
 				break;
+			}
+			else if (startPrintX + i4 <= x) {
+				index += 3;
+				continue;
 			}
 			int loc = printLoc + index;
 			if (loc + 3 > size || loc < 0) {
@@ -97,6 +101,11 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 		int xLoc = obj->getX();
 		int yLoc = obj->getY();
 		int layer = obj->getLayer();
+		int objWidth = obj->getWidth() * scale;
+		int xLocMax = xLoc + objWidth;
+
+		if (xLoc * scale > x + width || xLocMax * scale < x) continue;
+
 		Image* image = obj->getImage();
 		std::vector< std::vector<Pixel* >* >* imageVector = image->getVector();
 
@@ -109,11 +118,17 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 				int row = rows - (i + 1);
 				if (imageVector->at(row)->size() > 0) {
 					for (int i2 = 0; i2 < imageVector->at(row)->size(); i2++) {
+
 						//render pixels
 						Pixel* pixel = imageVector->at(row)->at(i2);
-						COLORREF color = pixel->getColor();
+
 						//allocate pixels
-						setPixel((xLoc + pixel->getOffset()) * scale, yPixLoc, x, y, width, height, scale, pixel->getLenght(), color);
+						int pixelLoc = xLoc * scale + pixel->getOffset() * scale;
+						int pixelLoc2 = pixelLoc + pixel->getLenght() * scale;
+
+						if (pixelLoc > x + width && pixelLoc2 > x + width) continue;
+						else if (pixelLoc < x && pixelLoc2 < x) continue;
+						else setPixel((xLoc + pixel->getOffset()) * scale, yPixLoc, x, y, width, height, scale, pixel->getLenght(), pixel->getColor());
 					}
 				}
 			}
