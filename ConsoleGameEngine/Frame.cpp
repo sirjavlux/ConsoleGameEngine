@@ -29,7 +29,11 @@ void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int
 	const int startPrintX = xPixLoc;
 	const int row = 3 * width;
 	int printLoc = (yPixLoc - y) * 3 * width + (xPixLoc - x) * 3; // calculate start print location
+	//calculate y axis render locations 
 	const int startRow = printLoc / row;
+	int rowsLeft = height - 1 - startRow;
+	int minY = scale > rowsLeft ? scale - rowsLeft : 0;
+	int maxY = startRow < 0 ? scale - startRow : scale;
 	//calculate print lenght considering edge of screen
 	int pixelLenght = scale * lenght;
 	const int screenEnd = maxX - startPrintX;
@@ -44,8 +48,7 @@ void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int
 	}
 	//start rendering
 	int index = startIndex;
-	for (int i3 = 0; i3 < scale; i3++) {
-		if (startRow + i3 >= height - 1 || startRow + i3 <= 0) continue;
+	for (int i3 = minY; i3 < maxY; i3++) {
 		for (int i4 = startLoc; i4 < pixelLenght; i4++) {
 			int loc = printLoc + index; // calculate render loc
 
