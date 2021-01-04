@@ -22,6 +22,7 @@ list<GameObject*> gameObjects;
 list<GameObject*> closeToFrame;
 
 map<int, list<GameObject*>> inFrameUpdated;
+map<int, int> inFrameUpdatedLines;
 
 string textBox = "";
 
@@ -95,10 +96,11 @@ double distance(int x2, int x1, int y2, int y1) {
 }
 
 //safe access to variables
-std::mutex gameObjectsMutex, closeToFrameMutex, updatedFrameMutex;
+std::mutex gameObjectsMutex, closeToFrameMutex, updatedFrameMutex, inFrameUpdatedLinesMutex;
 
 void safePushCloseToFrame(GameObject* obj) {
 	std::lock_guard<std::mutex> lock(closeToFrameMutex);
+	if (find(closeToFrame.begin(), closeToFrame.end(), obj) != closeToFrame.end()) return;
 	closeToFrame.push_back(obj);
 }
 
@@ -109,7 +111,9 @@ void safeRemoveCloseToFrame(GameObject* obj) {
 
 void safePushToUpdatedFrame(GameObject* obj) {
 	std::lock_guard<std::mutex> lock(updatedFrameMutex);
-	inFrameUpdated[obj->getLayer()].push_back(obj);
+	int layer = obj->getLayer();
+	if (std::find(inFrameUpdated[layer].begin(), inFrameUpdated[layer].end(), obj) != inFrameUpdated[layer].end()) return;
+	inFrameUpdated[layer].push_back(obj);
 }
 
 void safeRemoveUpdatedFrame(GameObject* obj) {
@@ -135,6 +139,16 @@ list<GameObject*> saflyGetGameObjects() {
 map<int, list<GameObject*>> getInFrameUpdated() {
 	std::lock_guard<std::mutex> lock(updatedFrameMutex);
 	return inFrameUpdated;
+}
+
+map<int, int> & getInFrameUpdatedLines() {
+	std::lock_guard<std::mutex> lock(inFrameUpdatedLinesMutex);
+	return inFrameUpdatedLines;
+}
+
+void setInFrameUpdatedLines(int layer, int lines) {
+	std::lock_guard<std::mutex> lock(inFrameUpdatedLinesMutex);
+	inFrameUpdatedLines[layer] = lines;
 }
 
 void safeClear() {
@@ -271,9 +285,8 @@ void updateUpdatedInFrame(SEngine* engine) {
 		list<GameObject*>::iterator iter = closeToFrame.begin();
 		while (iter != closeToFrame.end()) {
 			if (overlapsFrame(engine, *iter)) {
-				if (std::find(inFrameUpdated.at((*iter)->getLayer()).begin(), inFrameUpdated.at((*iter)->getLayer()).end(), (*iter)) == inFrameUpdated.at((*iter)->getLayer()).end()) {
-					safePushToUpdatedFrame((*iter));
-				}
+				int layer = (*iter)->getLayer();
+				safePushToUpdatedFrame((*iter));
 			}
 			iter++;
 		}
@@ -281,15 +294,16 @@ void updateUpdatedInFrame(SEngine* engine) {
 		//remove
 		map<int, list<GameObject*>>::iterator iter2 = inFrameUpdated.begin();
 		while (iter2 != inFrameUpdated.end()) {
-			list<GameObject*>* objects = &(*iter2).second;
-			int layer = (*iter2).first;
-			list<GameObject*>::iterator it = objects->begin();
-			while (it != objects->end()) {
-				if (!overlapsFrame(engine, *it)) {
-					safeRemoveUpdatedFrame(*it);
-				}
+			int lines = 0; // to calculate thread use during frame rendering
+			list<GameObject*> objects = iter2->second;
+			int layer = iter2->first;
+			list<GameObject*>::iterator it = objects.begin();
+			while (it != objects.end()) {
+				if (!overlapsFrame(engine, *it)) safeRemoveUpdatedFrame(*it);
+				else lines += (*it)->getImage()->getVector()->size(); // get lines of pixels in frame
 				it++;
 			}
+			setInFrameUpdatedLines(layer, lines); // set lines
 			iter2++;
 		}
 
