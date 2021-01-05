@@ -42,6 +42,7 @@ GameObject::GameObject(int xLoc, int yLoc, int layer, string n, Image newImage) 
 	y = yLoc;
 	l = layer;
 	name = n;
+	degrees = 0;
 	updateImage(newImage);
 }
 GameObject::GameObject(int xLoc, int yLoc, int layer, string n) {
@@ -50,6 +51,7 @@ GameObject::GameObject(int xLoc, int yLoc, int layer, string n) {
 	l = layer;
 	h = 0;
 	w = 0;
+	degrees = 0;
 	name = n;
 }
 GameObject::GameObject(string n) {
@@ -58,6 +60,7 @@ GameObject::GameObject(string n) {
 	l = 0;
 	h = 0;
 	w = 0;
+	degrees = 0;
 	name = n;
 }
 GameObject::GameObject() {
@@ -66,7 +69,15 @@ GameObject::GameObject() {
 	l = 0;
 	h = 0;
 	w = 0;
+	degrees = 0;
 	name = "";
+}
+//manage rotation
+double GameObject::getRotation() {
+	return degrees;
+}
+void GameObject::setRotation(double degrees) {
+	GameObject::degrees = degrees;
 }
 //on removal
 GameObject::~GameObject() {

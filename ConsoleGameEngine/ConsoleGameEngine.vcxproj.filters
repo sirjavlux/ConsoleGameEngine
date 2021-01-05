@@ -79,7 +79,7 @@
       <Filter>Game</Filter>
     </ClCompile>
     <ClCompile Include="KeyEvents.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

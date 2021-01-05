@@ -50,6 +50,7 @@ void onEnable(SEngine* engine) {
 	shipImage.addLine("  B  HT HT  B  ");
 	shipImage.addLine("     B   B     ");
 	ship->updateImage(shipImage);
+	ship->setRotation(95.0);
 	registerGameObject(ship, scene);
 
 	//create space background

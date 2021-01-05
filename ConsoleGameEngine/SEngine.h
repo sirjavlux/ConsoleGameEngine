@@ -60,6 +60,7 @@ class GameObject
 {
 private:
 	int x, y, l, h, w;
+	double degrees;
 	std::string name;
 	Image image;
 public:
@@ -70,6 +71,8 @@ public:
 	~GameObject();
 	void teleport(int xLoc, int yLoc);
 	std::string getName();
+	double getRotation();
+	void setRotation(double degrees);
 	int getX();
 	int getY();
 	int getLayer();

@@ -1,4 +1,5 @@
 #define _WIN32_WINNT 0x0500
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include <map>
 #include <vector>
@@ -11,6 +12,7 @@
 #include <wingdi.h>
 #include <cstdint>
 #include <mutex>
+#include <math.h>
 
 #include "SEngine.h"
 #include "Utils.h"
@@ -22,44 +24,97 @@ int oldSize = getScreenWidth() * getScreenHeight() * 3;
 byte* data = new byte[oldSize]{};
 
 //set to image map
-void setPixel(int xPixLoc, int yPixLoc, int x, int y, int width, int height, int scale, int lenght, COLORREF color, int size, int maxX) {
+void setPixel(int xPixLoc, int yPixLoc, int cameraX, int cameraY, int width, int height, int scale, int lenght, COLORREF color, int size, int maxX, const double rotation, const double rotationOriginX, const double rotationOriginY, const int yLoc) {
+	
 	const byte red = GetRValue(color);
 	const byte green = GetGValue(color);
 	const byte blue = GetBValue(color);
-	const int startPrintX = xPixLoc;
-	const int row = 3 * width;
-	int printLoc = (yPixLoc - y) * 3 * width + (xPixLoc - x) * 3; // calculate start print location
-	//calculate y axis render locations 
-	const int startRow = printLoc / row;
-	int rowsLeft = height - 1 - startRow;
-	int minY = scale > rowsLeft ? scale - rowsLeft : 0;
-	int maxY = startRow < 0 ? scale - startRow : scale;
-	//calculate print lenght considering edge of screen
-	int pixelLenght = scale * lenght;
-	const int screenEnd = maxX - startPrintX;
-	if (pixelLenght > screenEnd) pixelLenght = screenEnd;
-	//calculate start index and loc based on screen location
-	const int startOffset = x - startPrintX;
-	int startLoc = 0;
-	int startIndex = 0;
-	if (startOffset > 0) {
-		startLoc = startOffset;
-		startIndex = startOffset * 3;
-	}
-	//start rendering
-	int index = startIndex;
-	for (int i3 = minY; i3 < maxY; i3++) {
-		for (int i4 = startLoc; i4 < pixelLenght; i4++) {
-			int loc = printLoc + index; // calculate render loc
 
-			data[loc] = blue; // blue
-			data[loc + 1] = green; // green
-			data[loc + 2] = red; // red
+	/*/////////////////////////////////
+	* Without object being rotated
+	*//////////////////////////////////
 
-			index += 3; // increase to next pixel index
+	if (rotation == 0) {
+		const int row = 3 * width;
+		const int startPrintX = xPixLoc;
+		int printLoc = (yPixLoc - cameraY) * row + (xPixLoc - cameraX) * 3; // calculate start print location
+		//calculate y axis render locations 
+		const int startRow = printLoc / row;
+		int rowsLeft = height - 1 - startRow;
+		int minY = scale > rowsLeft ? scale - rowsLeft : 0;
+		int maxY = startRow < 0 ? scale - startRow : scale;
+		//calculate print lenght considering edge of screen
+		int pixelLenght = scale * lenght;
+		const int screenEnd = maxX - startPrintX;
+		if (pixelLenght > screenEnd) pixelLenght = screenEnd;
+		//calculate start index and loc based on screen location
+		const int startOffset = cameraX - startPrintX;
+		int startLoc = 0;
+		int startIndex = 0;
+		if (startOffset > 0) {
+			startLoc = startOffset;
+			startIndex = startOffset * 3;
 		}
-		printLoc += row; // increase to next row
-		index = startIndex;
+		//start rendering
+		int index = startIndex;
+		for (int i3 = minY; i3 < maxY; i3++) {
+			for (int i4 = startLoc; i4 < pixelLenght; i4++) {
+				int loc = printLoc + index; // calculate render loc
+
+				data[loc] = blue; // blue
+				data[loc + 1] = green; // green
+				data[loc + 2] = red; // red
+
+				index += 3; // increase to next pixel index
+			}
+			printLoc += row; // increase to next row
+			index = startIndex;
+		}
+	}
+
+	/*/////////////////////////////////
+	* When rotated
+	*//////////////////////////////////
+
+	else {
+		//variables
+		const int row = 3 * width;
+		//calculate location
+		const double radians = (90 - rotation) * M_PI / 180;
+		const double cs = cos(radians);
+		const double ss = sin(radians);
+		const double rotationY = (xPixLoc - rotationOriginX) * cs + (yPixLoc - rotationOriginY) * ss;
+		const double rotationX = (xPixLoc - rotationOriginX) * ss - (yPixLoc - rotationOriginY) * cs;
+		//start rendering
+		for (int i3 = 0; i3 < scale; i3++) {
+			for (int i4 = 0; i4 < scale * lenght; i4++) {
+				int y = round(((float) i4) * cs + ((float) i3) * ss + rotationY);
+				int x = round(((float) i4) * ss - ((float) i3) * cs + rotationX);
+				y += (rotationOriginY - yLoc) / 2;
+
+				const int currRow = y - cameraY;
+				const int rowLoc = currRow * row;
+				const int colLoc = (x - cameraX) * 3;
+
+				if (colLoc + 3 > row || colLoc < 0) continue;
+				if (currRow < 0) continue; // <-------------- fix y axis out of frame error
+
+				int loc = rowLoc + colLoc; // calculate print loc
+
+				if (loc + 3 > size) continue;
+				data[loc] = blue; // blue
+				data[loc + 1] = green; // green
+				data[loc + 2] = red; // red
+
+				//fill empty pixels
+				if (colLoc + 6 > row || colLoc < 0) continue;
+
+				if (loc + 6 > size) continue;
+				data[loc + 3] = blue; // blue
+				data[loc + 3 + 1] = green; // green
+				data[loc + 3 + 2] = red; // red
+			}
+		}
 	}
 }
 
@@ -86,7 +141,7 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 }
 
 //calculate pixels based on object images <------------ Fix objects won't render to frame
-void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int x, int y, int size, int maxX) {
+void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int cameraX, int cameraY, int size, int maxX) {
 
 	int count = 0;
 	int toMove = to - from;
@@ -105,19 +160,23 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 		int yLoc = obj->getY();
 		int layer = obj->getLayer();
 		int objWidth = obj->getWidth() * scale;
+		int objHeight = obj->getHeight() * scale;
 		int xLocMax = xLoc + objWidth;
+		const double rotation = obj->getRotation();
 
-		if (xLoc * scale > x + width || xLocMax * scale < x) continue;
+		if (xLoc * scale > cameraX + width || xLocMax * scale < cameraX && rotation == 0) continue;
 
 		Image* image = obj->getImage();
 		std::vector< std::vector<Pixel* >* >* imageVector = image->getVector();
 
 		//loop trough y axis
 		if (imageVector->size() > 0) {
+			const int rotationOriginX = xLoc * scale + objWidth / 2;
+			const int rotationOriginY = yLoc + objHeight / 2;
 			int rows = imageVector->size();
 			for (int i = 0; i < rows; i++) {
 				int yPixLoc = (yLoc + i) * scale;
-				if (!(yPixLoc < y + height && yPixLoc >= y)) continue;
+				if (!(yPixLoc < cameraY + height && yPixLoc >= cameraY) && rotation == 0) continue;
 				int row = rows - (i + 1);
 				if (imageVector->at(row)->size() > 0) {
 					for (int i2 = 0; i2 < imageVector->at(row)->size(); i2++) {
@@ -129,9 +188,9 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 						int pixelLoc = xLoc * scale + pixel->getOffset() * scale;
 						int pixelLoc2 = pixelLoc + pixel->getLenght() * scale;
 
-						if (pixelLoc > x + width && pixelLoc2 > x + width) continue;
-						else if (pixelLoc < x && pixelLoc2 < x) continue;
-						else setPixel((xLoc + pixel->getOffset()) * scale, yPixLoc, x, y, width, height, scale, pixel->getLenght(), pixel->getColor(), size, maxX);
+						if (pixelLoc > cameraX + width && pixelLoc2 > cameraX + width && rotation == 0) continue;
+						else if (pixelLoc < cameraX && pixelLoc2 < cameraX && rotation == 0) continue;
+						else setPixel((xLoc + pixel->getOffset()) * scale, yPixLoc, cameraX, cameraY, width, height, scale, pixel->getLenght(), pixel->getColor(), size, maxX, rotation, rotationOriginX, rotationOriginY, yLoc);
 					}
 				}
 			}
@@ -203,7 +262,7 @@ void drawFrame(SEngine * engine) {
 	drawPixelsToScreen(engine, width, height);
 
 	//print underneth text
-	std::cout << " " << getBottomTextBox() << " " << width << " : " << height;
+	std::cout << " " << getBottomTextBox();
 
 	//fix console writing/remove flicker and reset
 	ClearScreen();

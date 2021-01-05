@@ -30,8 +30,8 @@ string textBox = "";
 //check if gameobject overlaps frame
 bool overlapsFrame(SEngine* engine, GameObject* obj) {
 
-	int width = getScreenWidth() * 1.2;
-	int height = getScreenHeight() * 1.2;
+	int width = (int) (getScreenWidth() * 1.2);
+	int height = (int) (getScreenHeight() * 1.2);
 
 	//frame coordinates
 	int cameraX = engine->getCameraX() - width / 2;
@@ -51,8 +51,10 @@ bool overlapsFrame(SEngine* engine, GameObject* obj) {
 
 //check if gameobject overlaps frame with offset
 bool overlapsFrame(SEngine* engine, GameObject * obj, int offset) {
-	int width = getScreenWidth() * 1.2;
-	int height = getScreenHeight() * 1.2;
+
+	int width = (int)(getScreenWidth() * 1.2);
+	int height = (int)(getScreenHeight() * 1.2);
+
 	//frame coordinates
 	int cameraX = engine->getCameraX() - width / 2;
 	int cameraY = engine->getCameraY() - height / 2;
@@ -171,7 +173,7 @@ void checkAndAddObjectsCloseToFrame(SEngine * engine, int from, int to) {
 	list<GameObject*> objects = saflyGetGameObjects();
 	list<GameObject*>::iterator iter = objects.begin();
 	while (iter != objects.end()) {
-		if (overlapsFrame(engine, *iter, sqrt(getScreenWidth() * getScreenHeight()) / 2)) {
+		if (overlapsFrame(engine, *iter, (int) (sqrt(getScreenWidth() * getScreenHeight()) / 2))) {
 			safePushCloseToFrame(*iter);
 		}
 		iter++;
@@ -186,7 +188,7 @@ void checkAndRemoveObjectsCloseToFrame(SEngine* engine) {
 	list<GameObject*> objects = saflyGetCloseToFrame();
 	list<GameObject*>::iterator iter = objects.begin();
 	while (iter != objects.end()) {
-		if (!overlapsFrame(engine, *iter, sqrt(getScreenWidth() * getScreenHeight()) / 2)) {
+		if (!overlapsFrame(engine, *iter, (int)(sqrt(getScreenWidth() * getScreenHeight()) / 2))) {
 			safeRemoveCloseToFrame(*iter);
 		}
 		iter++;
@@ -240,7 +242,7 @@ void registerObjectToFrame(SEngine * engine, GameObject* obj) {
 	if (overlapsFrame(engine, obj)) {
 		safePushToUpdatedFrame(obj);
 	}
-	else if (overlapsFrame(engine, obj, sqrt(getScreenWidth() * getScreenHeight()) / 2)) {
+	else if (overlapsFrame(engine, obj, (int)(sqrt(getScreenWidth() * getScreenHeight()) / 2))) {
 		safePushCloseToFrame(obj);
 	}
 
