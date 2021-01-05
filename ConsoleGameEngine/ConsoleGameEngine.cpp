@@ -18,13 +18,6 @@ void startCheckingKeyInput(SEngine * engine);
 void startConsoleDraw(SEngine* engine);
 void startPhysics(SEngine* engine);
 
-//temp event
-void pressedKeyEvent(SEngine* engine);
-//update events function
-void updateEvents(SEngine* engine) {
-	if (*getLastKeyPressed() > 0) pressedKeyEvent(engine); //fire if key was pressed
-}
-
 //Get a console handle
 HWND myconsole = GetConsoleWindow();
 
@@ -38,8 +31,6 @@ void startCoreLoop(SEngine* engine) {
 		//start time
 		auto start = std::chrono::steady_clock::now();
 
-		//update events
-		updateEvents(engine);
 		//update camera
 		engine->updateCamera();
 
@@ -123,7 +114,6 @@ int SEngine::getCameraY() {
 void SEngine::teleportCamera(int x, int y) {
 	cameraX = x;
 	cameraY = y;
-	updateCameraMovementFrame();
 }
 void SEngine::setCameraFollow(GameObject * obj) {
 	cameraFollowObject = obj->getName();

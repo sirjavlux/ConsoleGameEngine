@@ -163,12 +163,6 @@ Scene* getActiveStartScene();
 void registerGameObject(GameObject* obj, Scene* scene); // GameObject function
 
 /*///////////////////////////
-* KEY PRESS FUNCTIONS
-*////////////////////////////
-
-int* getLastKeyPressed();
-
-/*///////////////////////////
 * FRAME FUNCTIONS
 *////////////////////////////
 
@@ -180,16 +174,8 @@ void setBottomTextBox(std::string str);
 std::string getBottomTextBox();
 std::map<int, std::list<GameObject*>> getInFrame();
 void registerObjectToFrame(SEngine* engine, GameObject* obj);
-void updateObjectToFrame(GameObject obj);
-void updateCameraMovementFrame();
 void findObjectsInFrame(SEngine* engine);
 void updateFrameObjects(SEngine * engine);
-
-/*///////////////////////////
-* EVENT
-*////////////////////////////
-
-void updateEvents(SEngine* engine);
 
 /*///////////////////////////
 * PHYSICS
@@ -197,7 +183,7 @@ void updateEvents(SEngine* engine);
 
 class Vector2D {
 private:
-	int x, y;
+	double x, y;
 public:
 	Vector2D();
 	double getX();
@@ -220,11 +206,27 @@ public:
 
 class Colider2D {
 private:
-public:
+public: 
 };
 
 /*///////////////////////////
-* EXCEPTIONS
+* Key Enums
 *////////////////////////////
+
+enum class KeyState {
+	down,
+	up,
+	idle
+};
+
+enum class Key {
+	KEY_A = 0x41,
+	KEY_D = 0x44,
+	KEY_S = 0x53,
+	KEY_W = 0x57,
+	KEY_SPACE = 0x20
+};
+
+const Key keyArr[5] = { Key::KEY_A, Key::KEY_D, Key::KEY_S, Key::KEY_W, Key::KEY_SPACE };
 
 #endif

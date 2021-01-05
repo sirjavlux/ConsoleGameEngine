@@ -235,11 +235,6 @@ void updateCloseToFrame(SEngine* engine) {
 	}
 }
 
-//update moving object
-void updateObjectToFrame(GameObject obj) {
-	
-}
-
 //register object for possible rendering
 void registerObjectToFrame(SEngine * engine, GameObject* obj) {
 	if (overlapsFrame(engine, obj)) {
@@ -250,21 +245,6 @@ void registerObjectToFrame(SEngine * engine, GameObject* obj) {
 	}
 
 	safePushToGameObjects(obj);
-}
-
-bool cameraMove = false;
-//update close objects when moving camera
-void updateCameraMovementFrame() {
-	cameraMove = true;
-}
-
-void updateCameraMovementFrameFinal(SEngine * engine) {
-	if (cameraMove == true) {
-		
-
-
-		cameraMove = false;
-	}
 }
 
 //start updating frame objects
@@ -330,7 +310,6 @@ void findObjectsInFrame(SEngine* engine) {
 		//update camera caching and such
 		if (getActiveScene() != nullptr) {
 			updateCloseToFrame(engine);
-			updateCameraMovementFrameFinal(engine);
 		}
 
 		//get end time

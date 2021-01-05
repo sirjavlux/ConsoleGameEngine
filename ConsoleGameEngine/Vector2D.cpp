@@ -4,7 +4,8 @@
 #include "SEngine.h"
 
 Vector2D::Vector2D() {
-
+	x = 0;
+	y = 0;
 }
 
 double Vector2D::getLenght() {
