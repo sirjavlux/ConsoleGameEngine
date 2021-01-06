@@ -83,7 +83,7 @@ void onEnable(SEngine* engine) {
 		std::stringstream stm;
 		stm << "star_small_" << i;
 
-		GameObject* smallStar = new GameObject(x, y, 0, stm.str());
+		GameObject* smallStar = new GameObject(x, y, 0, stm.str(), engine->getPixelScale());
 		smallStar->updateImage(smallStarImage);
 		registerGameObject(smallStar, scene);
 	}
@@ -101,7 +101,7 @@ void onEnable(SEngine* engine) {
 		std::stringstream stm;
 		stm << "star_medium_" << i;
 
-		GameObject* mediumStar = new GameObject(x, y, 0, stm.str());
+		GameObject* mediumStar = new GameObject(x, y, 0, stm.str(), engine->getPixelScale());
 		mediumStar->updateImage(mediumStarImage);
 		registerGameObject(mediumStar, scene);
 	}
@@ -121,7 +121,7 @@ void onEnable(SEngine* engine) {
 		std::stringstream stm;
 		stm << "star_large_" << i;
 
-		GameObject* largeStar = new GameObject(x, y, 0, stm.str());
+		GameObject* largeStar = new GameObject(x, y, 0, stm.str(), engine->getPixelScale());
 		largeStar->updateImage(largeStarImage);
 		registerGameObject(largeStar, scene);
 	}
