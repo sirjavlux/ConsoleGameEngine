@@ -162,6 +162,7 @@
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="Pixel.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="UpdateTick.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Vector2D.cpp" />
   </ItemGroup>

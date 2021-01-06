@@ -17,6 +17,7 @@ using namespace std;
 void startCheckingKeyInput(SEngine * engine);
 void startConsoleDraw(SEngine* engine);
 void startPhysics(SEngine* engine);
+void UpdateTick(SEngine* engine);
 
 //Get a console handle
 HWND myconsole = GetConsoleWindow();
@@ -31,8 +32,8 @@ void startCoreLoop(SEngine* engine) {
 		//start time
 		auto start = std::chrono::steady_clock::now();
 
-		//update camera
-		engine->updateCamera();
+		//update
+		UpdateTick(engine);
 
 		//get end time
 		auto end = std::chrono::steady_clock::now();
@@ -65,7 +66,7 @@ SEngine::SEngine() {
 	running = true;
 	tickSpeed = 10;
 	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
-	cameraFollowObject = "";
+	cameraFollowObject = nullptr;
 	mydc = GetDC(myconsole);
 	SEngine::name = "ConsoleGameEngine";
 	started = false;
@@ -116,16 +117,16 @@ void SEngine::teleportCamera(int x, int y) {
 	cameraY = y;
 }
 void SEngine::setCameraFollow(GameObject * obj) {
-	cameraFollowObject = obj->getName();
+	cameraFollowObject = obj;
 }
 void SEngine::cancelCameraFollow() {
-	cameraFollowObject = "";
+	cameraFollowObject = nullptr;
 }
 bool SEngine::hasCameraObjectAttatched() {
-	return cameraFollowObject.length() > 0;
+	return cameraFollowObject != nullptr;
 }
 GameObject* SEngine::getCameraFollowObject() {
-	return getGameObject(cameraFollowObject);
+	return cameraFollowObject;
 }
 void SEngine::setCameraFollowOffsetX(int amount) {
 	cameraFollowOffsetX = amount;

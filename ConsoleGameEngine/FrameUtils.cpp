@@ -40,9 +40,8 @@ bool overlapsFrame(SEngine* engine, GameObject* obj) {
 	int frameY1 = cameraY; int frameY2 = cameraY + height;
 
 	//object coordinates
-	int scale = engine->getPixelScale();
-	int x1 = obj->getX() * scale; int x2 = x1 + obj->getWidth() * scale;
-	int y1 = obj->getY() * scale; int y2 = y1 + obj->getHeight() * scale;
+	int x1 = obj->getX(); int x2 = x1 + obj->getWidth();
+	int y1 = obj->getY(); int y2 = y1 + obj->getHeight();
 
 	if (x1 >= frameX2 || x2 <= frameX1) return false;
 	else if (y2 <= frameY1 || y1 >= frameY2) return false;
@@ -63,8 +62,8 @@ bool overlapsFrame(SEngine* engine, GameObject * obj, int offset) {
 
 	//object coordinates
 	int scale = engine->getPixelScale();
-	int x1 = obj->getX() * scale; int x2 = x1 + obj->getWidth() * scale;
-	int y1 = obj->getY() * scale; int y2 = y1 + obj->getHeight() * scale;
+	int x1 = obj->getX(); int x2 = x1 + obj->getWidth();
+	int y1 = obj->getY(); int y2 = y1 + obj->getHeight();
 
 	if (x1 >= frameX2 + offset * scale || x2 <= frameX1 - offset * scale) return false;
 	else if (y2 <= frameY1 - offset * scale || y1 >= frameY2 + offset * scale) return false;

@@ -23,35 +23,42 @@ void onEnable(SEngine* engine) {
 
 	//create color map
 	//are used to assign colors to chars
-	ImageColorMap cMap;
-	cMap.setColor('W', RGB(203, 237, 255));
-	cMap.setColor('H', RGB(0, 98, 209));
-	cMap.setColor('T', RGB(0, 73, 156));
-	cMap.setColor('D', RGB(0, 50, 114));
-	cMap.setColor('G', RGB(0, 33, 70));
-	cMap.setColor('B', RGB(0, 150, 238));
-	cMap.setColor('R', RGB(255, 150, 238));
+	ImageColorMap * cMap = new ImageColorMap();
+	cMap->setColor('W', RGB(203, 237, 255));
+	cMap->setColor('H', RGB(0, 98, 209));
+	cMap->setColor('T', RGB(0, 73, 156));
+	cMap->setColor('D', RGB(0, 50, 114));
+	cMap->setColor('G', RGB(0, 33, 70));
+	cMap->setColor('B', RGB(0, 150, 238));
+	cMap->setColor('R', RGB(255, 150, 238));
 
 	//ship object
-	GameObject* ship = new GameObject(-7, -5, 2, "ship");
-	Image shipImage(&cMap);
-	shipImage.addLine("       H       ");
-	shipImage.addLine("       H       ");
-	shipImage.addLine("       H       ");
-	shipImage.addLine("       H       ");
-	shipImage.addLine("      HTT      ");
-	shipImage.addLine("      HTD      ");
-	shipImage.addLine("      HTD      ");
-	shipImage.addLine("   G  HTD  G   ");
-	shipImage.addLine("   G HTHTD G   ");
-	shipImage.addLine("   G HTWTD G   ");
-	shipImage.addLine("   HHTHWTTTH   ");
-	shipImage.addLine("HHHTTTHTDTTTTHH");
-	shipImage.addLine("  B  HT HT  B  ");
-	shipImage.addLine("     B   B     ");
+	GameObject* ship = new GameObject(-7, -5, 2, "ship", engine->getPixelScale());
+	Image * shipImage = new Image(cMap);
+	shipImage->addLine("       H       ");
+	shipImage->addLine("       H       ");
+	shipImage->addLine("       H       ");
+	shipImage->addLine("       H       ");
+	shipImage->addLine("      HTT      ");
+	shipImage->addLine("      HTD      ");
+	shipImage->addLine("      HTD      ");
+	shipImage->addLine("   G  HTD  G   ");
+	shipImage->addLine("   G HTHTD G   ");
+	shipImage->addLine("   G HTWTD G   ");
+	shipImage->addLine("   HHTHWTTTH   ");
+	shipImage->addLine("HHHTTTHTDTTTTHH");
+	shipImage->addLine("  B  HT HT  B  ");
+	shipImage->addLine("     B   B     ");
 	ship->updateImage(shipImage);
-	ship->setRotation(95.0);
+	ship->setRotation(0);
+	ship->setMaxVelocity(20);
 	registerGameObject(ship, scene);
+
+	//set camera to follow this object
+	engine->setCameraFollow(ship);
+	//center camera on the middle of the object
+	engine->setCameraFollowOffsetY((int) (ship->getHeight() * engine->getPixelScale() / 2));
+	engine->setCameraFollowOffsetX((int) (ship->getWidth() * engine->getPixelScale() / 2));
 
 	//create space background
 
@@ -66,6 +73,8 @@ void onEnable(SEngine* engine) {
 	int largeStars = 4000;
 
 	//small stars
+	Image * smallStarImage = new Image(cMap);
+	smallStarImage->addLine("W");
 	for (int i = 0; i < smallStars; i++) {
 
 		int x = starGenLocationX + (std::rand() % (starGenWidth - starGenLocationX + 1));
@@ -75,13 +84,15 @@ void onEnable(SEngine* engine) {
 		stm << "star_small_" << i;
 
 		GameObject* smallStar = new GameObject(x, y, 0, stm.str());
-		Image smallStarImage(&cMap);
-		smallStarImage.addLine("W");
 		smallStar->updateImage(smallStarImage);
 		registerGameObject(smallStar, scene);
 	}
 
 	//medium stars
+	Image * mediumStarImage = new Image(cMap);
+	mediumStarImage->addLine(" W ");
+	mediumStarImage->addLine("WWW");
+	mediumStarImage->addLine(" W ");
 	for (int i = 0; i < mediumStars; i++) {
 
 		int x = starGenLocationX + (std::rand() % (starGenWidth - starGenLocationX + 1));
@@ -91,15 +102,17 @@ void onEnable(SEngine* engine) {
 		stm << "star_medium_" << i;
 
 		GameObject* mediumStar = new GameObject(x, y, 0, stm.str());
-		Image mediumStarImage(&cMap);
-		mediumStarImage.addLine(" W ");
-		mediumStarImage.addLine("WWW");
-		mediumStarImage.addLine(" W ");
 		mediumStar->updateImage(mediumStarImage);
 		registerGameObject(mediumStar, scene);
 	}
 
 	//large stars
+	Image * largeStarImage = new Image(cMap);
+	largeStarImage->addLine("  W  ");
+	largeStarImage->addLine(" WWW ");
+	largeStarImage->addLine("WWWWW");
+	largeStarImage->addLine(" WWW ");
+	largeStarImage->addLine("  W  ");
 	for (int i = 0; i < largeStars; i++) {
 
 		int x = starGenLocationX + (std::rand() % (starGenWidth - starGenLocationX + 1));
@@ -109,12 +122,6 @@ void onEnable(SEngine* engine) {
 		stm << "star_large_" << i;
 
 		GameObject* largeStar = new GameObject(x, y, 0, stm.str());
-		Image largeStarImage(&cMap);
-		largeStarImage.addLine("  W  ");
-		largeStarImage.addLine(" WWW ");
-		largeStarImage.addLine("WWWWW");
-		largeStarImage.addLine(" WWW ");
-		largeStarImage.addLine("  W  ");
 		largeStar->updateImage(largeStarImage);
 		registerGameObject(largeStar, scene);
 	}

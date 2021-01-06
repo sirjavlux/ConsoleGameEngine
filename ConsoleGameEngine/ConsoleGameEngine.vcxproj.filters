@@ -81,6 +81,9 @@
     <ClCompile Include="KeyEvents.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="UpdateTick.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">

@@ -3,6 +3,16 @@
 
 #include "SEngine.h"
 
+Vector2D::Vector2D(double x, double y, double multiplier) {
+	Vector2D::x = x * multiplier;
+	Vector2D::y = y * multiplier;
+}
+
+Vector2D::Vector2D(double x, double y) {
+	Vector2D::x = x;
+	Vector2D::y = y;
+}
+
 Vector2D::Vector2D() {
 	x = 0;
 	y = 0;
@@ -34,5 +44,7 @@ void Vector2D::multiply(double amount) {
 }
 
 void Vector2D::normalize() {
-
+	double lenght = getLenght();
+	x /= lenght;
+	y /= lenght;
 }

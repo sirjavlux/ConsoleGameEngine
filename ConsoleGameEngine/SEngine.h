@@ -53,6 +53,40 @@ public:
 };
 
 /*///////////////////////////
+* PHYSICS
+*////////////////////////////
+
+class Vector2D {
+private:
+	double x, y;
+public:
+	Vector2D(double x, double y, double multiplier);
+	Vector2D(double x, double y);
+	Vector2D();
+	double getX();
+	double getY();
+	double getLenght();
+	void setX(double newX);
+	void setY(double newY);
+	void multiply(double amount);
+	void normalize();
+};
+
+class ObjectPhysics2D {
+private:
+	Vector2D vector2d;
+public:
+	ObjectPhysics2D();
+	void addForce(Vector2D velocity);
+	Vector2D* getVelocity();
+};
+
+class Colider2D {
+private:
+public:
+};
+
+/*///////////////////////////
 * GAME OBJECT
 *////////////////////////////
 
@@ -60,12 +94,12 @@ class GameObject
 {
 private:
 	int x, y, l, h, w;
-	double degrees;
+	double degrees, maxVelocity;
 	std::string name;
-	Image image;
+	Image * image;
 public:
-	GameObject(int xLoc, int yLoc, int layer, std::string n, Image image);
-	GameObject(int xLoc, int yLoc, int layer, std::string n);
+	GameObject(int xLoc, int yLoc, int layer, std::string n, Image * image, int scale);
+	GameObject(int xLoc, int yLoc, int layer, std::string n, int scale);
 	GameObject(std::string n);
 	GameObject();
 	~GameObject();
@@ -78,8 +112,12 @@ public:
 	int getLayer();
 	int getHeight();
 	int getWidth();
-	void updateImage(Image image);
+	void updateImage(Image * image);
 	Image * getImage();
+	void addForce(Vector2D vec);
+	Vector2D* getVelocity();
+	void setMaxVelocity(double amount);
+	double getMaxVelocity();
 };
 
 void removeGameObject(GameObject * obj);
@@ -100,7 +138,7 @@ private:
 	int tickSpeed;
 	int cameraX, cameraY, cameraFollowOffsetX, cameraFollowOffsetY;
 	int pixelScale;
-	std::string cameraFollowObject;
+	GameObject * cameraFollowObject;
 	std::string name;
 	HDC mydc;
 	bool started;
@@ -179,38 +217,6 @@ std::map<int, std::list<GameObject*>> getInFrame();
 void registerObjectToFrame(SEngine* engine, GameObject* obj);
 void findObjectsInFrame(SEngine* engine);
 void updateFrameObjects(SEngine * engine);
-
-/*///////////////////////////
-* PHYSICS
-*////////////////////////////
-
-class Vector2D {
-private:
-	double x, y;
-public:
-	Vector2D();
-	double getX();
-	double getY();
-	double getLenght();
-	void setX(double newX);
-	void setY(double newY);
-	void multiply(double amount);
-	void normalize();
-};
-
-class ObjectPhysics2D {
-private:
-	Vector2D vector2d;
-public:
-	ObjectPhysics2D();
-	void addForce(Vector2D velocity);
-	Vector2D * getVelocity();
-};
-
-class Colider2D {
-private:
-public: 
-};
 
 /*///////////////////////////
 * Key Enums

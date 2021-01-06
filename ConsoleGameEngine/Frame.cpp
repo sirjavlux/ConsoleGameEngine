@@ -24,7 +24,7 @@ int oldSize = getScreenWidth() * getScreenHeight() * 3;
 byte* data = new byte[oldSize]{};
 
 //set to image map
-void setPixel(int xPixLoc, int yPixLoc, int cameraX, int cameraY, int width, int height, int scale, int lenght, COLORREF color, int size, int maxX, const double rotation, const double rotationOriginX, const double rotationOriginY, const int yLoc) {
+void setPixel(int xPixLoc, int yPixLoc, int cameraX, int cameraY, int width, int height, int scale, int lenght, COLORREF color, int size, int maxX, const double rotation, const double rotationOriginX, const double rotationOriginY, const int yLoc, const int xLoc) {
 	
 	const byte red = GetRValue(color);
 	const byte green = GetGValue(color);
@@ -88,16 +88,15 @@ void setPixel(int xPixLoc, int yPixLoc, int cameraX, int cameraY, int width, int
 		//start rendering
 		for (int i3 = 0; i3 < scale; i3++) {
 			for (int i4 = 0; i4 < scale * lenght; i4++) {
-				int y = round(((float) i4) * cs + ((float) i3) * ss + rotationY);
-				int x = round(((float) i4) * ss - ((float) i3) * cs + rotationX);
-				y += (rotationOriginY - yLoc) / 2;
+				int y = rotationOriginY + (int) round(i4 * cs + i3 * ss + rotationY);
+				int x = rotationOriginX + (int) round(i4 * ss - i3 * cs + rotationX);
 
 				const int currRow = y - cameraY;
 				const int rowLoc = currRow * row;
 				const int colLoc = (x - cameraX) * 3;
 
 				if (colLoc + 3 > row || colLoc < 0) continue;
-				if (currRow < 0) continue; // <-------------- fix y axis out of frame error
+				if (currRow < 0) continue;
 
 				int loc = rowLoc + colLoc; // calculate print loc
 
@@ -140,7 +139,7 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 	SetDIBitsToDevice(engine->getDC(), 0, 0, width, height, 0, 0, 0, height, data, &bmpi, DIB_RGB_COLORS);
 }
 
-//calculate pixels based on object images <------------ Fix objects won't render to frame
+//calculate pixels based on object images
 void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int cameraX, int cameraY, int size, int maxX) {
 
 	int count = 0;
@@ -164,18 +163,18 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 		int xLocMax = xLoc + objWidth;
 		const double rotation = obj->getRotation();
 
-		if (xLoc * scale > cameraX + width || xLocMax * scale < cameraX && rotation == 0) continue;
+		if (xLoc > cameraX + width || xLocMax < cameraX && rotation == 0) continue;
 
 		Image* image = obj->getImage();
 		std::vector< std::vector<Pixel* >* >* imageVector = image->getVector();
 
 		//loop trough y axis
 		if (imageVector->size() > 0) {
-			const int rotationOriginX = xLoc * scale + objWidth / 2;
+			const int rotationOriginX = xLoc + objWidth / 2;
 			const int rotationOriginY = yLoc + objHeight / 2;
 			int rows = imageVector->size();
 			for (int i = 0; i < rows; i++) {
-				int yPixLoc = (yLoc + i) * scale;
+				int yPixLoc = yLoc + i * scale;
 				if (!(yPixLoc < cameraY + height && yPixLoc >= cameraY) && rotation == 0) continue;
 				int row = rows - (i + 1);
 				if (imageVector->at(row)->size() > 0) {
@@ -185,12 +184,12 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 						Pixel* pixel = imageVector->at(row)->at(i2);
 
 						//allocate pixels
-						int pixelLoc = xLoc * scale + pixel->getOffset() * scale;
+						int pixelLoc = xLoc + pixel->getOffset() * scale;
 						int pixelLoc2 = pixelLoc + pixel->getLenght() * scale;
 
 						if (pixelLoc > cameraX + width && pixelLoc2 > cameraX + width && rotation == 0) continue;
 						else if (pixelLoc < cameraX && pixelLoc2 < cameraX && rotation == 0) continue;
-						else setPixel((xLoc + pixel->getOffset()) * scale, yPixLoc, cameraX, cameraY, width, height, scale, pixel->getLenght(), pixel->getColor(), size, maxX, rotation, rotationOriginX, rotationOriginY, yLoc);
+						else setPixel(xLoc + pixel->getOffset() * scale, yPixLoc, cameraX, cameraY, width, height, scale, pixel->getLenght(), pixel->getColor(), size, maxX, rotation, rotationOriginX, rotationOriginY, yLoc, xLoc);
 					}
 				}
 			}
@@ -261,11 +260,12 @@ void drawFrame(SEngine * engine) {
 	//draw frame
 	drawPixelsToScreen(engine, width, height);
 
+	//performance benchmarking below
 	//print underneth text
-	std::cout << " " << getBottomTextBox();
+	//std::cout << " " << getBottomTextBox();
 
 	//fix console writing/remove flicker and reset
-	ClearScreen();
+	//ClearScreen();
 }
 
 //frame drawing loop
