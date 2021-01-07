@@ -8,6 +8,7 @@
 #include <sstream>
 #include <tchar.h>
 #include <string>
+#include <mutex>
 
 #include "SEngine.h"
 #include "Utils.h"
@@ -134,8 +135,15 @@ void SEngine::setCameraFollowOffsetX(int amount) {
 void SEngine::setCameraFollowOffsetY(int amount) {
 	cameraFollowOffsetY = amount;
 }
+int SEngine::getCameraFollowOffsetX() {
+	return cameraFollowOffsetX;
+}
+int SEngine::getCameraFollowOffsetY() {
+	return cameraFollowOffsetY;
+}
 void SEngine::updateCamera() {
 	if (hasCameraObjectAttatched()) {
+		//update camera following object
 		GameObject * obj = getCameraFollowObject();
 		int x = obj->getX();
 		int y = obj->getY();

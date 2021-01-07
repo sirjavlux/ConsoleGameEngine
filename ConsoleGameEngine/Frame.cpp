@@ -140,7 +140,7 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 }
 
 //calculate pixels based on object images
-void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int cameraX, int cameraY, int size, int maxX) {
+void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int cameraX, int cameraY, int size, int maxX, SEngine* engine) {
 
 	int count = 0;
 	int toMove = to - from;
@@ -153,6 +153,12 @@ void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int
 			continue;
 		}
 		GameObject* obj = *it;
+		if (engine->getCameraFollowObject() == obj) {
+			//update camera if follow object
+			engine->updateCamera();
+			cameraX = engine->getCameraX() - width / 2;
+			cameraY = engine->getCameraY() - height / 2;
+		}
 		it++;
 
 		int xLoc = obj->getX();
@@ -238,7 +244,7 @@ void drawFrame(SEngine * engine) {
 		if (threadsToUse > threadCap) threadsToUse = threadCap;
 		else if (threadsToUse < 1) threadsToUse = 1;
 		if (threadsToUse == 1) {
-			calculateImages(layer, frame, 0, (int)startSize, scale, width, height, x, y, size, maxX);
+			calculateImages(layer, frame, 0, (int)startSize, scale, width, height, x, y, size, maxX, engine);
 		}
 		else {
 			std::vector<std::thread> threads;
@@ -246,7 +252,7 @@ void drawFrame(SEngine * engine) {
 			double increment = 1.0 / threadsToUse;
 			double begin = 0;
 			for (int i = 0; i < threadsToUse; i++) {
-				threads.push_back(std::thread(calculateImages, layer, frame, (int)startSize * begin, (int)startSize * (begin + increment), scale, width, height, x, y, size, maxX));
+				threads.push_back(std::thread(calculateImages, layer, frame, (int)startSize * begin, (int)startSize * (begin + increment), scale, width, height, x, y, size, maxX, engine));
 				begin += increment;
 			}
 			//finish tasks 

@@ -5,7 +5,7 @@
 #include <list>
 #include <iostream>
 #include <vector>
-#include <deque>
+#include <mutex>
 #include <exception>
 #include <Windows.h>
 #include <thread>
@@ -162,6 +162,8 @@ public:
 	GameObject* getCameraFollowObject();
 	void setCameraFollowOffsetX(int amount);
 	void setCameraFollowOffsetY(int amount);
+	int getCameraFollowOffsetX();
+	int getCameraFollowOffsetY();
 	bool isGameRunning();
 	HDC getDC();
 	HWND getWindow();

@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int physicsSpeed = 40;
+const int physicsSpeed = 50;
 
 //physics loop
 void moveObjects(SEngine* engine);
@@ -21,9 +21,6 @@ void startPhysics(SEngine* engine) {
 
 		//do tasks
 		moveObjects(engine);
-
-		//update camera 
-		engine->updateCamera();
 
 		//get end time
 		auto end = std::chrono::steady_clock::now();
@@ -55,11 +52,7 @@ Vector2D* safelyGetForce(GameObject* obj) {
 
 void safelySetAddForceVector(GameObject* obj, Vector2D* vec) {
 	lock_guard<mutex> lock(addForceObjectsMutex);
-	// return if bad number
-	double x = vec->getX();
-	double y = vec->getY();
-	if (x > 1000 || y > 1000 || x < -1000 || y < -1000) return;
-	else (*addForceObjects)[obj] = vec;
+	(*addForceObjects)[obj] = vec;
 }
 
 void safelyRemoveAddForceVector(GameObject* obj) {
@@ -85,8 +78,16 @@ void moveObjects(SEngine* engine) {
 		int xMoveAmount = (int) round(vec->getX());
 		int yMoveAmount = (int) round(vec->getY());
 
+		// continue if bugged speed
+		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) continue;
+
 		// move object
-		obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+		if (engine->getCameraFollowObject() == obj) {
+			obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+		}
+		else {
+			obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+		}
 
 		iter++;
 	}
