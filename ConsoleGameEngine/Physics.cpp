@@ -102,14 +102,7 @@ void moveObjects(SEngine* engine) {
 		int yMoveAmount = (int)round(vec->getY());
 
 		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) {
-			Vector2D * oldVec = safelyGetOldForce(obj);
-			if (oldVec == nullptr) {
-				continue;
-			}
-			else {
-				xMoveAmount = (int)round(oldVec->getX());
-				yMoveAmount = (int)round(oldVec->getY());
-			}
+			continue;
 		}
 		else {
 			safelySetOldAddForceVector(obj, vec);
