@@ -162,10 +162,10 @@ void GameObject::addForce(Vector2D vec) {
 	delete oldVec;
 }
 //get Velocity 
-Vector2D * GameObject::getVelocity() {
+Vector2D GameObject::getVelocity() {
 	Vector2D* oldVec = safelyGetForce(this);
-	if (oldVec == nullptr) return &Vector2D();
-	return oldVec;
+	if (oldVec != nullptr) return *oldVec;
+	else return Vector2D();
 }
 void GameObject::setMaxVelocity(double amount) {
 	maxVelocity = amount;

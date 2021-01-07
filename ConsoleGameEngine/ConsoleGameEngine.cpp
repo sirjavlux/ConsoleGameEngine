@@ -65,7 +65,7 @@ SEngine::SEngine() {
 	//set up variables
 	SEngine::pixelScale = 10;
 	running = true;
-	tickSpeed = 10;
+	tickSpeed = 20;
 	cameraX = 0, cameraY = 0, cameraFollowOffsetX = 0, cameraFollowOffsetY = 0;
 	cameraFollowObject = nullptr;
 	mydc = GetDC(myconsole);

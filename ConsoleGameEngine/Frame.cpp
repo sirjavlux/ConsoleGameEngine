@@ -80,7 +80,7 @@ void setPixel(int xPixLoc, int yPixLoc, int cameraX, int cameraY, int width, int
 		//variables
 		const int row = 3 * width;
 		//calculate location
-		const double radians = (90 - rotation) * M_PI / 180;
+		const double radians = (180 - rotation) * M_PI / 180;
 		const double cs = cos(radians);
 		const double ss = sin(radians);
 		const double rotationY = (xPixLoc - rotationOriginX) * cs + (yPixLoc - rotationOriginY) * ss;

@@ -115,7 +115,7 @@ public:
 	void updateImage(Image * image);
 	Image * getImage();
 	void addForce(Vector2D vec);
-	Vector2D* getVelocity();
+	Vector2D getVelocity();
 	void setMaxVelocity(double amount);
 	double getMaxVelocity();
 };

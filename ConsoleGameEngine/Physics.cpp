@@ -40,19 +40,42 @@ void startPhysics(SEngine* engine) {
 */////////////////////////////
 
 // modify values safely
-mutex addForceObjectsMutex;
+mutex addForceObjectsMutex, oldAddForceObjectsMutex;
 map<GameObject*, Vector2D*> * addForceObjects = new map<GameObject*, Vector2D*>();
+map<GameObject*, Vector2D*> * oldAddForceObjects = new map<GameObject*, Vector2D*>();
+
+Vector2D* safelyGetOldForce(GameObject* obj) {
+	lock_guard<mutex> lock(oldAddForceObjectsMutex);
+	map<GameObject*, Vector2D*>::iterator iter = oldAddForceObjects->find(obj);
+	if (iter != oldAddForceObjects->end()) return oldAddForceObjects->at(obj);
+	else return nullptr;
+}
 
 Vector2D* safelyGetForce(GameObject* obj) {
 	lock_guard<mutex> lock(addForceObjectsMutex);
 	map<GameObject*, Vector2D*>::iterator iter = addForceObjects->find(obj);
-	if (iter != addForceObjects->end()) return addForceObjects->at(obj);
+	if (iter != addForceObjects->end()) {
+		Vector2D* vec = addForceObjects->at(obj);
+		int xMoveAmount = (int)round(vec->getX());
+		int yMoveAmount = (int)round(vec->getY());
+		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) {
+			return safelyGetOldForce(obj);
+		}
+		else {
+			return addForceObjects->at(obj);
+		}
+	}
 	else return nullptr;
 }
 
 void safelySetAddForceVector(GameObject* obj, Vector2D* vec) {
 	lock_guard<mutex> lock(addForceObjectsMutex);
 	(*addForceObjects)[obj] = vec;
+}
+
+void safelySetOldAddForceVector(GameObject* obj, Vector2D* vec) {
+	lock_guard<mutex> lock(oldAddForceObjectsMutex);
+	(*oldAddForceObjects)[obj] = vec;
 }
 
 void safelyRemoveAddForceVector(GameObject* obj) {
@@ -75,19 +98,25 @@ void moveObjects(SEngine* engine) {
 		GameObject* obj = iter->first;
 		Vector2D* vec = iter->second;
 
-		int xMoveAmount = (int) round(vec->getX());
-		int yMoveAmount = (int) round(vec->getY());
+		int xMoveAmount = (int)round(vec->getX());
+		int yMoveAmount = (int)round(vec->getY());
 
-		// continue if bugged speed
-		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) continue;
-
-		// move object
-		if (engine->getCameraFollowObject() == obj) {
-			obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) {
+			Vector2D * oldVec = safelyGetOldForce(obj);
+			if (oldVec == nullptr) {
+				continue;
+			}
+			else {
+				xMoveAmount = (int)round(oldVec->getX());
+				yMoveAmount = (int)round(oldVec->getY());
+			}
 		}
 		else {
-			obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+			safelySetOldAddForceVector(obj, vec);
 		}
+
+		// move object
+		obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
 
 		iter++;
 	}
