@@ -158,8 +158,7 @@ void GameObject::addForce(Vector2D vec) {
 	}
 
 	//set new vector
-	safelySetAddForceVector(this, new Vector2D(vec.getX(), vec.getY()));
-	delete oldVec;
+	safelySetAddForceVector(this, &vec);
 }
 //get Velocity 
 Vector2D GameObject::getVelocity() {

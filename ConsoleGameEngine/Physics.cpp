@@ -58,7 +58,7 @@ Vector2D* safelyGetForce(GameObject* obj) {
 		Vector2D* vec = addForceObjects->at(obj);
 		int xMoveAmount = (int)round(vec->getX());
 		int yMoveAmount = (int)round(vec->getY());
-		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) {
+		if (xMoveAmount > 1000 || yMoveAmount > 1000 || xMoveAmount < -1000 || yMoveAmount < -1000) {
 			return safelyGetOldForce(obj);
 		}
 		else {
@@ -69,13 +69,22 @@ Vector2D* safelyGetForce(GameObject* obj) {
 }
 
 void safelySetAddForceVector(GameObject* obj, Vector2D* vec) {
+	//get old vector for removal
+	Vector2D* oldVec = safelyGetForce(obj);
+	if (oldVec != nullptr) delete oldVec;
+
 	lock_guard<mutex> lock(addForceObjectsMutex);
-	(*addForceObjects)[obj] = vec;
+	Vector2D* newVec = new Vector2D(vec->getX(), vec->getY());
+	(*addForceObjects)[obj] = newVec;
 }
 
 void safelySetOldAddForceVector(GameObject* obj, Vector2D* vec) {
+	Vector2D* oldVec = safelyGetOldForce(obj);
+	if (oldVec != nullptr) delete oldVec;
+
 	lock_guard<mutex> lock(oldAddForceObjectsMutex);
-	(*oldAddForceObjects)[obj] = vec;
+	Vector2D* newVec = new Vector2D(vec->getX(), vec->getY());
+	(*oldAddForceObjects)[obj] = newVec;
 }
 
 void safelyRemoveAddForceVector(GameObject* obj) {
@@ -101,7 +110,7 @@ void moveObjects(SEngine* engine) {
 		int xMoveAmount = (int)round(vec->getX());
 		int yMoveAmount = (int)round(vec->getY());
 
-		if (xMoveAmount > 10000 || yMoveAmount > 10000 || xMoveAmount < -10000 || yMoveAmount < -10000) {
+		if (xMoveAmount > 1000 || yMoveAmount > 1000 || xMoveAmount < -1000 || yMoveAmount < -1000) {
 			continue;
 		}
 		else {
