@@ -23,14 +23,17 @@ GameObject * getGameObject(string name) {
 }
 
 GameObject * getUnsecureGameObject(string name) {
+	lock_guard<mutex> lock(getObjectMutex);
 	return objectMap->find(name) == objectMap->end() ? &GameObject() : objectMap->at(name);
 }
 
 void removeGameObject(GameObject * obj) {
+	lock_guard<mutex> lock(getObjectMutex);
 	objectMap->erase(obj->getName());
 }
 
 void registerGameObject(GameObject* obj, Scene* scene) {
+	lock_guard<mutex> lock(getObjectMutex);
 	string n = obj->getName();
 	int x = obj->getX();
 	int y = obj->getY();

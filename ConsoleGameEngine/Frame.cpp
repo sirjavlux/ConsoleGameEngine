@@ -14,6 +14,7 @@
 #include <mutex>
 #include <math.h>
 
+#include "Chunk.h"
 #include "SEngine.h"
 #include "Utils.h"
 #include "DefinedImageColors.h"
@@ -140,77 +141,65 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 }
 
 //calculate pixels based on object images
-void calculateImages(int layer, std::map<int, std::list<GameObject*>> frame, int from, int to, int scale, int width, int height, int cameraX, int cameraY, int size, int maxX, SEngine* engine) {
-
-	int count = 0;
+std::list<Chunk*> safelyGetChunksInFrame();
+void calculateImages(std::list<Chunk*> * frame, int width, int height, int from, int to, int cameraX, int cameraY, SEngine* engine) {
+	std::list<Chunk*>::iterator iter = frame->begin();
+	std::advance(iter, from);
 	int toMove = to - from;
-	std::list<GameObject*>::iterator it = frame[layer].begin();
-	std::advance(it, from);
-	while (it != frame[layer].end()) {
-		//variables
-		if (*it == nullptr) {
-			it++;
-			continue;
-		}
-		GameObject* obj = *it;
-		if (engine->getCameraFollowObject() == obj) {
-			//update camera if follow object
-			engine->updateCamera();
-			cameraX = engine->getCameraX() - width / 2;
-			cameraY = engine->getCameraY() - height / 2;
-		}
-		it++;
+	int count = 0;
+	// frame data
+	const int row = 3 * width;
+	const int size = width * height * 3;
+	const int scale = engine->getPixelScale();
+	// start looping trough chunks
+	while (iter != frame->end()) {
+		if (count >= toMove) break;
+		else {
+			// get chunk data
+			Chunk* chunk = *iter;
+			int y = chunk->getLocation()->first * 100;
+			int x = chunk->getLocation()->second * 100;
+			byte* colors = chunk->getPixelColors();
 
-		int xLoc = obj->getX();
-		int yLoc = obj->getY();
-		int layer = obj->getLayer();
-		int objWidth = obj->getWidth() * scale;
-		int objHeight = obj->getHeight() * scale;
-		int xLocMax = xLoc + objWidth;
-		const double rotation = obj->getRotation();
+			// calculate y axis
+			const int offsetY = y - cameraY;
 
-		if (xLoc > cameraX + width || xLocMax < cameraX && rotation == 0) continue;
+			// calculate x axis
+			const int offsetX = x - cameraX;
+			const int scaledOffsetX = offsetX * 3;
 
-		Image* image = obj->getImage();
-		std::vector< std::vector<Pixel* >* >* imageVector = image->getVector();
+			// frame data
+			const int startRow = offsetY * row;
+			int currentRow = startRow;
+			int currentColorRow = 0;
+			int xIncrement = 0;
 
-		//loop trough y axis
-		if (imageVector->size() > 0) {
-			const int rotationOriginX = xLoc + objWidth / 2;
-			const int rotationOriginY = yLoc + objHeight / 2;
-			int rows = imageVector->size();
-			for (int i = 0; i < rows; i++) {
-				int yPixLoc = yLoc + i * scale;
-				if (!(yPixLoc < cameraY + height && yPixLoc >= cameraY) && rotation == 0) continue;
-				int row = rows - (i + 1);
-				if (imageVector->at(row)->size() > 0) {
-					for (int i2 = 0; i2 < imageVector->at(row)->size(); i2++) {
+			for (int i = 0; i < 100; i++) {
+				for (int i2 = 0; i2 < 100; i2++) {
+					int placeX = scaledOffsetX + xIncrement;
+					int colorLoc = currentColorRow + xIncrement;
+					xIncrement += 3;
 
-						//render pixels
-						Pixel* pixel = imageVector->at(row)->at(i2);
-
-						//allocate pixels
-						int pixelLoc = xLoc + pixel->getOffset() * scale;
-						int pixelLoc2 = pixelLoc + pixel->getLenght() * scale;
-
-						if (pixelLoc > cameraX + width && pixelLoc2 > cameraX + width && rotation == 0) continue;
-						else if (pixelLoc < cameraX && pixelLoc2 < cameraX && rotation == 0) continue;
-						else setPixel(xLoc + pixel->getOffset() * scale, yPixLoc, cameraX, cameraY, width, height, scale, pixel->getLenght(), pixel->getColor(), size, maxX, rotation, rotationOriginX, rotationOriginY, yLoc, xLoc);
-					}
+					if (placeX >= row || placeX <= 0) continue;
+					int loc = currentRow + placeX;
+					if (loc >= size || loc < 0) continue;
+					
+					if (colors == nullptr) break;
+					data[loc] = colors[colorLoc]; // blue
+					data[loc + 1] = colors[colorLoc + 1]; // green
+					data[loc + 2] = colors[colorLoc + 2]; // red
 				}
+				xIncrement = 0;
+				currentRow += row;
+				currentColorRow += 300;
 			}
 		}
-
-		//check if should end
-		if (count + 1 >= toMove) {
-			break;
-		}
 		count++;
+		iter++;
 	}
 }
 
 //draw frame on console
-std::map<int, int> & getInFrameUpdatedLines();
 void drawFrame(SEngine * engine) {
 
 	const int width = getScreenWidth();
@@ -226,41 +215,34 @@ void drawFrame(SEngine * engine) {
 		resetPixelData(size);
 	}
 
-	const int x = engine->getCameraX() - width / 2;
-	const int y = engine->getCameraY() - height / 2;
+	const int cameraX = engine->getCameraX() - width / 2;
+	const int cameraY = engine->getCameraY() - height / 2;
 
-	const int maxX = x + width;
-
-	std::map<int, std::list<GameObject*>> frame = getInFrame();
-	std::map<int, std::list<GameObject*>>::iterator iter = frame.begin();
+	std::list<Chunk*> frame = safelyGetChunksInFrame();
 	
-	while (iter != frame.end()) {
-		const int layer = (*iter).first;
-		const int startSize = frame.at(layer).size();
+	const double chunkSize = frame.size();
 
-		//calculate threads needed
-		const int threadCap = 8;
-		int threadsToUse = getInFrameUpdatedLines()[layer] / 150;
-		if (threadsToUse > threadCap) threadsToUse = threadCap;
-		else if (threadsToUse < 1) threadsToUse = 1;
-		if (threadsToUse == 1) {
-			calculateImages(layer, frame, 0, (int)startSize, scale, width, height, x, y, size, maxX, engine);
+	//calculate threads needed
+	const int threadCap = 8;
+	int threadsToUse = 2;
+	if (threadsToUse > threadCap) threadsToUse = threadCap;
+	else if (threadsToUse < 1) threadsToUse = 1;
+	if (threadsToUse == 1) {
+		calculateImages(&frame, width, height, 0, chunkSize, cameraX, cameraY, engine);
+	}
+	else {
+		std::vector<std::thread> threads;
+		//do tasks
+		double increment = 1.0 / threadsToUse;
+		double begin = 0;
+		for (int i = 0; i < threadsToUse; i++) {
+			threads.push_back(std::thread(calculateImages, &frame, width, height, (int)(chunkSize * begin), (int)(chunkSize * (begin + increment)), cameraX, cameraY, engine));
+			begin += increment;
 		}
-		else {
-			std::vector<std::thread> threads;
-			//do tasks
-			double increment = 1.0 / threadsToUse;
-			double begin = 0;
-			for (int i = 0; i < threadsToUse; i++) {
-				threads.push_back(std::thread(calculateImages, layer, frame, (int)startSize * begin, (int)startSize * (begin + increment), scale, width, height, x, y, size, maxX, engine));
-				begin += increment;
-			}
-			//finish tasks 
-			for (int i = 0; i < threadsToUse; i++) {
-				threads.at(i).join();
-			}
+		//finish tasks 
+		for (int i = 0; i < threadsToUse; i++) {
+			threads.at(i).join();
 		}
-		iter++;
 	}
 
 	//draw frame
@@ -268,10 +250,10 @@ void drawFrame(SEngine * engine) {
 
 	//performance benchmarking below
 	//print underneth text
-	//std::cout << " " << getBottomTextBox();
+	std::cout << " " << getBottomTextBox();
 
 	//fix console writing/remove flicker and reset
-	//ClearScreen();
+	ClearScreen();
 }
 
 //frame drawing loop

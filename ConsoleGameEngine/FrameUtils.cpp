@@ -9,79 +9,32 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
-#include<cmath>
+#include <cmath>
 #include <algorithm>
 
+#include "Chunk.h"
 #include "SEngine.h"
 #include "Utils.h"
 
-using namespace std;
-
 //cached gameobjects
-list<GameObject*> gameObjects;
-list<GameObject*> closeToFrame;
+std::map<std::pair<int, int>, Chunk*> chunks;
+std::list<Chunk*> chunksInFrame;
+std::list<Chunk*> chunksCloseToFrame;
 
-map<int, list<GameObject*>> inFrameUpdated;
-map<int, int> inFrameUpdatedLines;
-
-string textBox = "";
-
-//fix wierd out of frame bug <-----------------------
-//check if gameobject overlaps frame
-bool overlapsFrame(SEngine* engine, GameObject* obj) {
-
-	int width = (int) (getScreenWidth() * 1.5);
-	int height = (int) (getScreenHeight() * 1.5);
-
-	//frame coordinates
-	int cameraX = engine->getCameraX() - width / 2;
-	int cameraY = engine->getCameraY() - height / 2;
-	int frameX1 = cameraX; int frameX2 = cameraX + width;
-	int frameY1 = cameraY; int frameY2 = cameraY + height;
-
-	//object coordinates
-	int x1 = obj->getX(); int x2 = x1 + obj->getWidth();
-	int y1 = obj->getY(); int y2 = y1 + obj->getHeight();
-
-	if (x1 >= frameX2 || x2 <= frameX1) return false;
-	else if (y2 <= frameY1 || y1 >= frameY2) return false;
-	else return true;
-}
-
-//check if gameobject overlaps frame with offset
-bool overlapsFrame(SEngine* engine, GameObject * obj, int offset) {
-
-	int width = (int)(getScreenWidth() * 1.5);
-	int height = (int)(getScreenHeight() * 1.5);
-
-	//frame coordinates
-	int cameraX = engine->getCameraX() - width / 2;
-	int cameraY = engine->getCameraY() - height / 2;
-	int frameX1 = cameraX; int frameX2 = cameraX + width;
-	int frameY1 = cameraY; int frameY2 = cameraY + height;
-
-	//object coordinates
-	int scale = engine->getPixelScale();
-	int x1 = obj->getX(); int x2 = x1 + obj->getWidth();
-	int y1 = obj->getY(); int y2 = y1 + obj->getHeight();
-
-	if (x1 >= frameX2 + offset * scale || x2 <= frameX1 - offset * scale) return false;
-	else if (y2 <= frameY1 - offset * scale || y1 >= frameY2 + offset * scale) return false;
-	else return true;
-}
+std::string textBox = "";
 
 //update scene objects
 void safeClear();
-void updateFrameObjects(SEngine * engine) {
-	
+void updateFrameObjects(SEngine* engine) {
+
 	safeClear();
 
 	if (getActiveScene() != nullptr) {
 		Scene* activeScene = getActiveScene();
 
-		vector<string> objects = *activeScene->getObjectNames();
+		std::vector<std::string> objects = *activeScene->getObjectNames();
 
-		vector<string>::iterator iter = objects.begin();
+		std::vector<std::string>::iterator iter = objects.begin();
 
 		while (iter != objects.end()) {
 			GameObject* obj = getGameObject(*iter);
@@ -91,227 +44,192 @@ void updateFrameObjects(SEngine * engine) {
 	}
 }
 
-//distance 
-double distance(int x2, int x1, int y2, int y1) {
-	return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+// register new object
+void registerObjectToFrame(SEngine* engine, GameObject* obj) {
+	// calculate chunks
+	double scale = (double)engine->getPixelScale();
+	double w = (double)(obj->getWidth()) * scale;
+	double h = (double)(obj->getHeight()) * scale;
+	double x = (double)obj->getX();
+	double y = (double)obj->getY();
+
+	int fromX = (int)round((x / 100.0));
+	int toX = fromX + (int)ceil((w / 100.0));
+
+	int fromY = (int)round((y / 100.0));
+	int toY = fromY + (int)ceil((h / 100.0));
+
+	for (int i = fromY - 1; i < toY + 1; i++) {
+		for (int i2 = fromX - 1; i2 < toX + 1; i2++) {
+			std::pair<int, int> yx(i, i2);
+			if (chunks[yx] != nullptr) {
+				chunks[yx]->addGameObject(obj, engine);
+			}
+			else {
+				Chunk* chunk = new Chunk(yx);
+				chunk->addGameObject(obj, engine);
+				chunks[yx] = chunk;
+			}
+		}
+	}
 }
 
-//safe access to variables
-std::mutex gameObjectsMutex, closeToFrameMutex, updatedFrameMutex, inFrameUpdatedLinesMutex;
+// modify / get chunks in frame safely
+std::mutex chunksInFrameMutex, chunksCloseToFrameMutex, chunksMutex;
 
-void safePushCloseToFrame(GameObject* obj) {
-	std::lock_guard<std::mutex> lock(closeToFrameMutex);
-	if (find(closeToFrame.begin(), closeToFrame.end(), obj) != closeToFrame.end()) return;
-	closeToFrame.push_back(obj);
+// Close to frame chunks
+std::list<Chunk*> safelyGetChunksCloseToFrame() {
+	std::lock_guard<std::mutex> lock(chunksCloseToFrameMutex);
+	return chunksCloseToFrame;
 }
 
-void safeRemoveCloseToFrame(GameObject* obj) {
-	std::lock_guard<std::mutex> lock(closeToFrameMutex);
-	closeToFrame.remove(obj);
+void safelyAddChunkCloseToFrame(Chunk* chunk) {
+	std::lock_guard<std::mutex> lock(chunksCloseToFrameMutex);
+	if (std::find(chunksCloseToFrame.begin(), chunksCloseToFrame.end(), chunk) == chunksCloseToFrame.end()) chunksCloseToFrame.push_back(chunk);
 }
 
-void safePushToUpdatedFrame(GameObject* obj) {
-	std::lock_guard<std::mutex> lock(updatedFrameMutex);
-	int layer = obj->getLayer();
-	if (std::find(inFrameUpdated[layer].begin(), inFrameUpdated[layer].end(), obj) != inFrameUpdated[layer].end()) return;
-	inFrameUpdated[layer].push_back(obj);
+void safelyRemoveChunkCloseToFrame(Chunk* chunk) {
+	std::lock_guard<std::mutex> lock(chunksCloseToFrameMutex);
+	chunksCloseToFrame.remove(chunk);
 }
 
-void safeRemoveUpdatedFrame(GameObject* obj) {
-	std::lock_guard<std::mutex> lock(updatedFrameMutex);
-	inFrameUpdated[obj->getLayer()].remove(obj);
+// Frame chunks
+std::list<Chunk*> safelyGetChunksInFrame() {
+	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
+	return chunksInFrame;
 }
 
-void safePushToGameObjects(GameObject* obj) {
-	std::lock_guard<std::mutex> lock(gameObjectsMutex);
-	gameObjects.push_back(obj);
+void safelyAddChunkToFrame(Chunk* chunk) {
+	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
+	if (std::find(chunksInFrame.begin(), chunksInFrame.end(), chunk) == chunksInFrame.end()) chunksInFrame.push_back(chunk);
 }
 
-list<GameObject*> saflyGetCloseToFrame() {
-	std::lock_guard<std::mutex> lock(closeToFrameMutex);
-	return closeToFrame;
+void safelyRemoveChunkFromFrame(Chunk* chunk) {
+	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
+	chunksInFrame.remove(chunk);
 }
 
-list<GameObject*> saflyGetGameObjects() {
-	std::lock_guard<std::mutex> lock(gameObjectsMutex);
-	return gameObjects;
+// Regular chunk map
+std::map<std::pair<int, int>, Chunk*> safelyGetChunks() {
+	std::lock_guard<std::mutex> lock(chunksMutex);
+	return chunks;
 }
 
-map<int, list<GameObject*>> getInFrameUpdated() {
-	std::lock_guard<std::mutex> lock(updatedFrameMutex);
-	return inFrameUpdated;
+Chunk* safelyGetChunk(std::pair<int, int> yx) {
+	std::lock_guard<std::mutex> lock(chunksMutex);
+	return chunks[yx];
 }
 
-map<int, int> & getInFrameUpdatedLines() {
-	std::lock_guard<std::mutex> lock(inFrameUpdatedLinesMutex);
-	return inFrameUpdatedLines;
-}
-
-void setInFrameUpdatedLines(int layer, int lines) {
-	std::lock_guard<std::mutex> lock(inFrameUpdatedLinesMutex);
-	inFrameUpdatedLines[layer] = lines;
-}
-
+//safely clear old objects
 void safeClear() {
-	std::lock_guard<std::mutex> lock(gameObjectsMutex);
-	gameObjects.clear();
+	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
+	chunksInFrame.clear();
 
-	std::lock_guard<std::mutex> lock2(closeToFrameMutex);
-	closeToFrame.clear();
-
-	std::lock_guard<std::mutex> lock3(updatedFrameMutex);
-	inFrameUpdated.clear();
+	std::lock_guard<std::mutex> lock2(chunksMutex);
+	chunks.clear();
 }
 
-/*/////////////////////////////////////
-* update objects close to frame
-*//////////////////////////////////////
+//update in frame chunks
+void updateInFrameChunks(SEngine* engine) {
+	//camera data
+	int width = (int)(getScreenWidth() * 1.2);
+	int height = (int)(getScreenHeight() * 1.2);
+	int cameraX = engine->getCameraX() - width / 2;
+	int cameraY = engine->getCameraY() - height / 2;
+	int cameraXMax = cameraX + width;
+	int cameraYMax = cameraY + height;
+	
+	//chunk load cordinates
+	int fromX = (int)round(((double)cameraX) / 100.0); int toX = (int)ceil(((double)cameraXMax) / 100.0);
+	int fromY = (int)round(((double)cameraY) / 100.0); int toY = (int)ceil(((double)cameraYMax) / 100.0);
 
-//check for objects close to frame and update
-void checkAndAddObjectsCloseToFrame(SEngine * engine, int from, int to) {
-	list<GameObject*> objects = saflyGetGameObjects();
-	list<GameObject*>::iterator iter = objects.begin();
-	while (iter != objects.end()) {
-		if (overlapsFrame(engine, *iter, (int) (sqrt(getScreenWidth() * getScreenHeight()) / 4))) {
-			safePushCloseToFrame(*iter);
+	//remove chunks outside frame
+	std::list<Chunk*> tempChunks = safelyGetChunksInFrame();
+	std::list<Chunk*>::iterator iter = tempChunks.begin();
+
+	while (iter != tempChunks.end()) {
+		//check if chunk is in frame
+		Chunk* chunk = *iter;
+		std::pair<int, int> yx = *(chunk->getLocation());
+		int y1 = yx.first * 100; int y2 = y1 + 100;
+		int x1 = yx.second * 100; int x2 = x1 + 100;
+		//remove if out of frame
+		if (x1 >= cameraXMax || x2 <= cameraX) safelyRemoveChunkFromFrame(chunk);
+		else if (y2 <= cameraY || y1 >= cameraYMax) safelyRemoveChunkFromFrame(chunk);
+		iter++;
+	}
+
+	//add new chunks to frame
+	for (int i = fromY; i < toY; i++) {
+		for (int i2 = fromX; i2 < toX; i2++) {
+			std::pair<int, int> yx(i, i2);
+			Chunk* chunk = safelyGetChunk(yx);
+			if (chunk != nullptr) {
+				safelyAddChunkToFrame(chunk);
+			}
+		}
+	}
+}
+
+//update close chunk colormaps
+void updateCloseToFrameColorMaps(SEngine* engine) {
+	//camera data
+	int width = (int)(getScreenWidth() * 2);
+	int height = (int)(getScreenHeight() * 2);
+	int cameraX = engine->getCameraX() - width / 2;
+	int cameraY = engine->getCameraY() - height / 2;
+	int cameraXMax = cameraX + width;
+	int cameraYMax = cameraY + height;
+
+	//chunk load cordinates
+	int fromX = (int)round(((double)cameraX) / 100.0); int toX = (int)ceil(((double)cameraXMax) / 100.0);
+	int fromY = (int)round(((double)cameraY) / 100.0); int toY = (int)ceil(((double)cameraYMax) / 100.0);
+
+	//remove chunks outside frame
+	std::list<Chunk*> tempCloseChunks = safelyGetChunksCloseToFrame();
+	std::list<Chunk*>::iterator iter = tempCloseChunks.begin();
+
+	while (iter != tempCloseChunks.end()) {
+		//check if chunk is in frame
+		Chunk* chunk = *iter;
+		std::pair<int, int> yx = *(chunk->getLocation());
+		int y1 = yx.first * 100; int y2 = y1 + 100;
+		int x1 = yx.second * 100; int x2 = x1 + 100;
+		//remove if out of frame
+		if (x1 >= cameraXMax || x2 <= cameraX) {
+			safelyRemoveChunkCloseToFrame(chunk);
+			chunk->dissableColorMap();
+		}
+		else if (y2 <= cameraY || y1 >= cameraYMax) {
+			safelyRemoveChunkCloseToFrame(chunk);
+			chunk->dissableColorMap();
 		}
 		iter++;
 	}
-}
 
-int lastCloseUpcateCameraLocX = 0;
-int lastCloseUpcateCameraLocY = 0;
-
-//check removal of close to frame
-void checkAndRemoveObjectsCloseToFrame(SEngine* engine) {
-	list<GameObject*> objects = saflyGetCloseToFrame();
-	list<GameObject*>::iterator iter = objects.begin();
-	while (iter != objects.end()) {
-		if (!overlapsFrame(engine, *iter, (int)(sqrt(getScreenWidth() * getScreenHeight()) / 4))) {
-			safeRemoveCloseToFrame(*iter);
-		}
-		iter++;
-	}
-}
-
-//update and check objects close to frame
-void updateCloseToFrame(SEngine* engine) {
-	//calculate distance
-	double dist = distance(engine->getCameraX(), lastCloseUpcateCameraLocX, engine->getCameraY(), lastCloseUpcateCameraLocY);
-	//check if distance is far enugh for update
-	if (dist >= sqrt(getScreenWidth() * getScreenHeight()) / 8) {
-
-		//check if objects should be removed
-		std::thread objRemovalThread(checkAndRemoveObjectsCloseToFrame, engine);
-
-		lastCloseUpcateCameraLocX = engine->getCameraX();
-		lastCloseUpcateCameraLocY = engine->getCameraY();
-
-		//calculate threads needed
-		const int threadCap = 2;
-		const int startSize = gameObjects.size();
-		int threadsToUse = startSize / 10000;
-		if (threadsToUse > threadCap) threadsToUse = threadCap;
-		else if (threadsToUse < 1) threadsToUse = 1;
-		if (threadsToUse == 1) {
-			checkAndAddObjectsCloseToFrame(engine, 0, (int)startSize);
-		}
-		else {
-			std::vector<std::thread> threads;
-			//do tasks
-			double increment = 1.0 / threadsToUse;
-			double begin = 0;
-			for (int i = 0; i < threadsToUse; i++) {
-				threads.push_back(std::thread(checkAndAddObjectsCloseToFrame, engine, (int)startSize * begin, (int)startSize * (begin + increment)));
-				begin += increment;
-			}
-			//finish tasks 
-			for (int i = 0; i < threadsToUse; i++) {
-				threads.at(i).join();
+	//add new chunks to frame
+	for (int i = fromY; i < toY; i++) {
+		for (int i2 = fromX; i2 < toX; i2++) {
+			std::pair<int, int> yx(i, i2);
+			Chunk* chunk = safelyGetChunk(yx);
+			if (chunk != nullptr) {
+				safelyAddChunkCloseToFrame(chunk);
+				chunk->activateColorMap();
 			}
 		}
-
-		//join object removal thread
-		objRemovalThread.join();
-	}
-}
-
-//register object for possible rendering
-void registerObjectToFrame(SEngine * engine, GameObject* obj) {
-	if (overlapsFrame(engine, obj)) {
-		safePushToUpdatedFrame(obj);
-	}
-	else if (overlapsFrame(engine, obj, (int)(sqrt(getScreenWidth() * getScreenHeight()) / 4))) {
-		safePushCloseToFrame(obj);
-	}
-
-	safePushToGameObjects(obj);
-}
-
-//start updating frame objects
-const int objectSearchDelay = 10;
-const int frameObjectUpdatesPerSec = 2;
-
-void updateUpdatedInFrame(SEngine* engine) {
-	while (engine->isGameRunning()) {
-
-		//get start time
-		auto start = std::chrono::steady_clock::now();
-
-		//in frame map
-		map<int, list<GameObject*>> inFrameUpdated = getInFrameUpdated();
-
-		//add
-		list<GameObject*> closeToFrame = saflyGetCloseToFrame();
-		list<GameObject*>::iterator iter = closeToFrame.begin();
-		while (iter != closeToFrame.end()) {
-			if (overlapsFrame(engine, *iter)) {
-				int layer = (*iter)->getLayer();
-				safePushToUpdatedFrame((*iter));
-			}
-			iter++;
-		}
-
-		//remove
-		map<int, list<GameObject*>>::iterator iter2 = inFrameUpdated.begin();
-		while (iter2 != inFrameUpdated.end()) {
-			int lines = 0; // to calculate thread use during frame rendering
-			list<GameObject*> objects = iter2->second;
-			int layer = iter2->first;
-			list<GameObject*>::iterator it = objects.begin();
-			while (it != objects.end()) {
-				if (!overlapsFrame(engine, *it)) safeRemoveUpdatedFrame(*it);
-				else lines += (*it)->getImage()->getVector()->size(); // get lines of pixels in frame
-				it++;
-			}
-			setInFrameUpdatedLines(layer, lines); // set lines
-			iter2++;
-		}
-
-		//get end time
-		auto end = std::chrono::steady_clock::now();
-
-		//get time differance
-		double elapsedTime = double(std::chrono::duration_cast<std::chrono::milliseconds> (end - start).count());
-
-		double elapsedTimeDiff = 1 - ((elapsedTime > 1000.0 ? 1000.0 : elapsedTime) / 1000.0);
-		int finalSleepTime = (1000 / frameObjectUpdatesPerSec);
-		finalSleepTime = int(((double)finalSleepTime) * elapsedTimeDiff);
-		Sleep(finalSleepTime);
 	}
 }
 
 //find all objects and decide wether to keep them
+int objectSearchDelay = 20;
 void findObjectsInFrame(SEngine* engine) {
-	thread update(updateUpdatedInFrame, engine);
 	while (engine->isGameRunning()) {
 		//get start time
 		auto start = std::chrono::steady_clock::now();
 
-		//update camera caching and such
-		if (getActiveScene() != nullptr) {
-			updateCloseToFrame(engine);
-		}
+		//update chunks in frame
+		updateInFrameChunks(engine);
+		updateCloseToFrameColorMaps(engine);
 
 		//get end time
 		auto end = std::chrono::steady_clock::now();
@@ -324,18 +242,12 @@ void findObjectsInFrame(SEngine* engine) {
 		finalSleepTime = int (((double)finalSleepTime) * elapsedTimeDiff);
 		Sleep(finalSleepTime);
 	}
-	update.join();
 }
 
-map<int, list<GameObject*>> getInFrame() {
-	std::lock_guard<std::mutex> lock(updatedFrameMutex);
-	return inFrameUpdated;
-}
-
-void setBottomTextBox(string str) {
+void setBottomTextBox(std::string str) {
 	textBox = str;
 }
 
-string getBottomTextBox() {
+std::string getBottomTextBox() {
 	return textBox;
 }

@@ -8,18 +8,21 @@ Pixel::Pixel(COLORREF color, int lenght, int offset) {
 	COLOR = color;
 	l = lenght;
 	xOffset = offset;
+	layer = 0;
 }
 
 Pixel::Pixel(int lenght, int offset) {
 	COLOR = RGB(255, 160, 100);
 	l = lenght;
 	xOffset = offset;
+	layer = 0;
 }
 
 Pixel::Pixel() {
 	COLOR = RGB(255, 160, 100);
 	l = 0;
 	xOffset = 0;
+	layer = 0;
 }
 
 void Pixel::setLenght(int lenght) {
@@ -44,4 +47,12 @@ void Pixel::setColor(COLORREF color) {
 
 COLORREF Pixel::getColor() {
 	return COLOR;
+}
+
+void Pixel::setLayer(int layer) {
+	Pixel::layer = layer;
+}
+
+int Pixel::getLayer() {
+	return layer;
 }

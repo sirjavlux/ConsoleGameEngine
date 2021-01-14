@@ -11,6 +11,7 @@
 #include <thread>
 
 #include "Utils.h"
+#include "DrawPixel.h"
 
 /*///////////////////////////
 * PIXEL
@@ -22,12 +23,15 @@ private:
 	COLORREF COLOR;
 	int xOffset;
 	int l;
+	int layer;
 public:
 	Pixel(COLORREF color, int lenght, int offset);
 	Pixel(int lenght, int offset);
 	Pixel();
 	void setLenght(int lenght);
 	int getLenght();
+	void setLayer(int layer);
+	int getLayer();
 	void setOffset(int offset);
 	int getOffset();
 	void setColor(COLORREF color);
@@ -41,13 +45,13 @@ public:
 class Image
 {
 private:
-	std::vector<std::vector<Pixel*>*> * image;
+	std::vector<std::vector<DrawPixel*>*> * image;
 	ImageColorMap* cMap;
 public:
 	Image(ImageColorMap * colorMap);
 	Image();
 	void addLine(std::string line);
-	std::vector<std::vector<Pixel*>*> *& getVector();
+	std::vector<std::vector<DrawPixel*>*> *& getVector();
 	int calcWidth();
 	int calcHeight();
 };
@@ -209,16 +213,13 @@ void registerGameObject(GameObject* obj, Scene* scene); // GameObject function
 * FRAME FUNCTIONS
 *////////////////////////////
 
-const std::string borderStr = "\033[47m \033[0m";
 const char emptyPixel = ' ';
 
 void drawFrame(SEngine * engine);
 void setBottomTextBox(std::string str);
 std::string getBottomTextBox();
-std::map<int, std::list<GameObject*>> getInFrame();
 void registerObjectToFrame(SEngine* engine, GameObject* obj);
 void findObjectsInFrame(SEngine* engine);
-void updateFrameObjects(SEngine * engine);
 
 /*///////////////////////////
 * Key Enums

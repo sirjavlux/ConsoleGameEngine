@@ -7,77 +7,40 @@ using namespace std;
 
 //constructor
 Image::Image(ImageColorMap * colorMap) {
-	image = new vector< vector<Pixel*>* >();
+	image = new vector< vector<DrawPixel*>* >();
 	cMap = colorMap;
 
 }
 Image::Image() {
-	image = new vector< vector<Pixel*>* >();
+	image = new vector< vector<DrawPixel*>* >();
 	cMap = &ImageColorMap();
 
 }
 //set line
 void Image::addLine(string line) {
-	vector<Pixel*> * pixels = new vector<Pixel*>();
-	char oldC = ' ';
-	int offset = 0;
-	int lenght = 0;
+	vector<DrawPixel*> * pixels = new vector<DrawPixel*>();
 	for (int i = 0; i < line.length(); i++) {
 		char c = line.at(i);
-
-		//pre calculate pixel rows for performance
-		if (oldC != ' ') {
-			lenght++;
-		}
-		if (c != oldC && oldC != ' ') {
-			//push and reset
-			COLORREF color = cMap->getColor(oldC);
-			if (color != RGB(0, 0, 0)) {
-				Pixel* pixel = new Pixel();
-				pixel->setLenght(lenght);
-				pixel->setColor(color);
-				pixel->setOffset(offset);
-				pixels->push_back(pixel);
-			}
-			lenght = 0;
-			offset = i;
-		}
-		else if (i + 1 == line.length()) {
-			//push and reset
+		if (c != ' ') {
 			COLORREF color = cMap->getColor(c);
-			if (color != RGB(0, 0, 0)) {
-				Pixel* pixel = new Pixel();
-				pixel->setLenght(lenght + 1);
-				pixel->setColor(color);
-				pixel->setOffset(offset);
-				pixels->push_back(pixel);
-			}
-			lenght = 0;
+			pixels->push_back(new DrawPixel(0, new COLORREF(RGB(GetRValue(color), GetGValue(color), GetBValue(color)))));
 		}
-		if (c == ' ') {
-			offset = i + 1;
+		else {
+			pixels->push_back(nullptr);
 		}
-		oldC = c;
 	}
 	image->push_back(pixels);
 }
 //get image vector
-vector< vector<Pixel * > * > *& Image::getVector() {
+vector< vector<DrawPixel * > * > *& Image::getVector() {
 	return image;
 }
 //calculate width/height
 int Image::calcWidth() {
-	vector < vector<Pixel*> * >::iterator iter = image->begin();
+	vector < vector<DrawPixel*> * >::iterator iter = image->begin();
 	int widest = 0; 
 	while (iter != image->end()) {
-		int size = 0;
-		vector<Pixel*> * pixels = *iter;
-		vector<Pixel*>::iterator iter2 = pixels->begin();
-		while (iter2 != pixels->end()) {
-			size += (*iter2)->getLenght();
-			iter2++;
-		}
-
+		int size = (*iter)->size();
 		if (size > widest) widest = size;
 		iter++;
 	}

@@ -84,6 +84,12 @@
     <ClCompile Include="UpdateTick.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="Chunk.cpp">
+      <Filter>InGame</Filter>
+    </ClCompile>
+    <ClCompile Include="DrawPixel.cpp">
+      <Filter>InGame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">
@@ -93,6 +99,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DefinedImageColors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawPixel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -33,7 +33,7 @@ void onEnable(SEngine* engine) {
 	cMap->setColor('R', RGB(255, 150, 238));
 
 	//ship object
-	GameObject* ship = new GameObject(-7, -5, 2, "ship", engine->getPixelScale());
+	GameObject* ship = new GameObject(-102, -17, 3, "ship", engine->getPixelScale());
 	Image * shipImage = new Image(cMap);
 	shipImage->addLine("       H       ");
 	shipImage->addLine("       H       ");
@@ -61,16 +61,16 @@ void onEnable(SEngine* engine) {
 	engine->setCameraFollowOffsetX((int) (ship->getWidth() * engine->getPixelScale() / 2));
 
 	//create space background
-
+	
 	//place stars randomly based on predefined variables
 	int starGenLocationX = -2000;
 	int starGenLocationY = -2000;
-	int starGenWidth = 4000;
-	int starGenHeight = 12000;
+	int starGenWidth = 2000;
+	int starGenHeight = 2000;
 
-	int smallStars = 50000;
-	int mediumStars = 10000;
-	int largeStars = 4000;
+	int smallStars = 30000;
+	int mediumStars = 4000;
+	int largeStars = 2000;
 
 	//small stars
 	Image * smallStarImage = new Image(cMap);

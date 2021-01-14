@@ -17,6 +17,8 @@ using namespace std;
 	Scene * activeScene;
 	Scene * startScene;
 
+	void updateFrameObjects(SEngine * engine);
+
 	Scene * getScene(string name) {
 		return scenes.at(name);
 	}

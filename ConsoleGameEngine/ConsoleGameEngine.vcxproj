@@ -147,7 +147,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Colider2D.cpp" />
+    <ClCompile Include="DrawPixel.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="ObjectPhysics2D.cpp" />
     <ClCompile Include="ButtonInput.cpp" />
@@ -167,7 +169,9 @@
     <ClCompile Include="Vector2D.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Chunk.h" />
     <ClInclude Include="DefinedImageColors.h" />
+    <ClInclude Include="DrawPixel.h" />
     <ClInclude Include="SEngine.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
