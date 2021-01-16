@@ -141,12 +141,27 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 
 //set pixel at pixel location
 std::mutex pixelMutex;
-void setPixelAtLocation(const int frameLoc, const int colorLoc, byte* byteImage) {
+void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte* byteImage, const int scale, const int frameRow) {
 	std::lock_guard<std::mutex> lock(pixelMutex);
-	if (byteImage[colorLoc] == 0 && byteImage[colorLoc + 1] == 0 && byteImage[colorLoc + 2] == 0) return;
-	data[frameLoc] = byteImage[colorLoc]; // blue
-	data[frameLoc + 1] = byteImage[colorLoc + 1]; // green
-	data[frameLoc + 2] = byteImage[colorLoc + 2]; // red
+	byte b = byteImage[colorLoc];
+	byte g = byteImage[colorLoc + 1];
+	byte r = byteImage[colorLoc + 2];
+	if (b == 0 && g == 0 && r == 0) return;
+
+	// place pixel
+	int finalXIncrement = 0;
+	int finalYIncrement = 0;
+	for (int y2 = 0; y2 < scale; y2++) {
+		for (int x2 = 0; x2 < scale; x2++) {
+			int frameLoc = frameLocScaled + finalYIncrement + finalXIncrement;
+			data[frameLoc] = b; // blue
+			data[frameLoc + 1] = g; // green
+			data[frameLoc + 2] = r; // red
+			finalXIncrement += 3;
+		}
+		finalXIncrement = 0;
+		finalYIncrement += frameRow;
+	}
 }
 
 //calculate pixels based on object images
@@ -184,10 +199,12 @@ void calculateImages(std::list<GameObject*>
 			const double rotation = obj->getRotation();
 			const int objWidth = obj->getWidth() * scale;
 			const int objHeight = obj->getHeight() * scale;
+			const int objWidthOriginal = obj->getWidth();
+			const int objHeightOriginal = obj->getHeight();
 			const int objXMin = obj->getX(); int objXMax = objXMin + objWidth;
 			const int objYMin = obj->getY(); int objYMax = objYMin + objHeight;
-			const int row = objWidth * 3;
-			const int imageSize = objWidth * objHeight * 3;
+			const int row = objWidth / 10 * 3;
+			const int imageSize = objHeightOriginal * objWidthOriginal * 3;
 
 			/*////////////////////
 			* IF ROTATION
@@ -205,14 +222,14 @@ void calculateImages(std::list<GameObject*>
 				// frame/camera data y axis
 				const int offsetY = objYMin - cameraY;
 				const int yFrameOffset = offsetY < 0 ? 0 : offsetY;
-				const int yImageMin = offsetY < 0 ? offsetY * -1 : 0;
-				const int yImageMax = objHeight - (objYMax - (cameraY + height) < 0 ? 0 : objYMax - (cameraY + height));
+				const int yImageMin = (offsetY < 0 ? offsetY * -1 : 0) / scale;
+				const int yImageMax = (objHeight - (objYMax - (cameraY + height) < 0 ? 0 : objYMax - (cameraY + height))) / scale;
 
 				// frame/camera data x axis
 				const int offsetX = objXMin - cameraX;
 				const int xFrameOffset = (offsetX < 0 ? 0 : offsetX) * 3;
-				const int xImageMin = offsetX < 0 ? offsetX * -1 : 0;
-				const int xImageMax = objWidth - (objXMax - (cameraX + width) < 0 ? 0 : objXMax - (cameraX + width));
+				int xImageMin = (offsetX < 0 ? offsetX * -1 : 0) / scale;
+				const int xImageMax = (objWidth - (objXMax - (cameraX + width) < 0 ? 0 : objXMax - (cameraX + width))) / scale;
 
 				// loop data
 				int currentRow = yImageMin * row;
@@ -222,22 +239,18 @@ void calculateImages(std::list<GameObject*>
 				int currentFrameRow = yFrameOffset * frameRow;
 				int frameXIncrement = xFrameOffset;
 
-				// loop trough image
+				// loop trough pixels
 				for (int y = yImageMin; y < yImageMax; y++) {
 					for (int x = xImageMin; x < xImageMax; x++) {
+						int colorLoc = (yImageMax - y - 1) * row + x * 3;
+						int frameLocScaled = currentFrameRow + frameXIncrement;
 
-						int colorLoc = imageSize - (currentRow + xIncrement);
-						int frameLoc = currentFrameRow + frameXIncrement;
-
-						xIncrement += 3;
-						frameXIncrement += 3;
-
-						setPixelAtLocation(frameLoc, colorLoc, byteImage); // set final pixel
+						// place pixels
+						setPixelAtLocation(frameLocScaled, colorLoc, byteImage, scale, frameRow);
+						frameXIncrement += 30;
 					}
 					frameXIncrement = xFrameOffset;
-					xIncrement = startXIncrement;
-					currentRow += row;
-					currentFrameRow += frameRow;
+					currentFrameRow += frameRow * 10;
 				}
 			}
 		}

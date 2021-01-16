@@ -37,8 +37,8 @@ void Image::createByteImage(SEngine * engine) {
 	const int scale = engine->getPixelScale();
 	const int w = calcWidth();
 	const int h = calcHeight();
-	const int row = w * scale * 3;
-	const int size = h * scale * row;
+	const int row = w * 3;
+	const int size = h * row;
 	byteImage = new byte[size]();
 
 	int currentRow = 0;
@@ -53,6 +53,13 @@ void Image::createByteImage(SEngine * engine) {
 			const byte green = GetGValue(color);
 			const byte blue = GetBValue(color);
 
+			int loc = y * row + x * 3;
+
+			byteImage[loc] = blue;
+			byteImage[(int)(loc + 1)] = green;
+			byteImage[(int)(loc + 2)] = red;
+
+			/*
 			int xOffset = x * scale * 3 + 3;
 			int xIncrement = xOffset;
 
@@ -72,6 +79,7 @@ void Image::createByteImage(SEngine * engine) {
 				xIncrement = xOffset;
 				currentRow += row;
 			}
+			*/
 		}
 	}
 }
