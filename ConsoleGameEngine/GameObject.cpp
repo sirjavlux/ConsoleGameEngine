@@ -1,12 +1,4 @@
-#include <iostream>
-#include <map>
-#include <deque>
-#include <mutex>
-
 #include "SEngine.h"
-#include "Utils.h"
-
-using namespace std;
 
 /*//////////////////////////////////////////////////////////////
 * GAMEOBJECTS NEEDS TO BE ALLOCATED IN HEAP MEMORY, USING NEW
@@ -14,38 +6,39 @@ using namespace std;
 
 std::map<std::string, GameObject*> * objectMap = new std::map<std::string, GameObject*>();
 
-mutex getObjectMutex;
-GameObject * getGameObject(string name) {
-	lock_guard<mutex> lock(getObjectMutex);
+std::mutex getObjectMutex;
+GameObject * getGameObject(std::string name) {
+	std::lock_guard<std::mutex> lock(getObjectMutex);
 	std::map<std::string, GameObject*>::iterator iter = objectMap->find(name);
 	if (iter != objectMap->end()) return objectMap->at(name);
 	else return nullptr;
 }
 
-GameObject * getUnsecureGameObject(string name) {
-	lock_guard<mutex> lock(getObjectMutex);
+GameObject * getUnsecureGameObject(std::string name) {
+	std::lock_guard<std::mutex> lock(getObjectMutex);
 	return objectMap->find(name) == objectMap->end() ? &GameObject() : objectMap->at(name);
 }
 
 void removeGameObject(GameObject * obj) {
-	lock_guard<mutex> lock(getObjectMutex);
+	std::lock_guard<std::mutex> lock(getObjectMutex);
 	objectMap->erase(obj->getName());
 }
 
 void registerGameObject(GameObject* obj, Scene* scene) {
-	lock_guard<mutex> lock(getObjectMutex);
-	string n = obj->getName();
+	std::lock_guard<std::mutex> lock(getObjectMutex);
+	std::string n = obj->getName();
 	int x = obj->getX();
 	int y = obj->getY();
 	int h = obj->getHeight();
 	int w = obj->getWidth();
 
-	objectMap->insert(pair<string, GameObject *> (n, obj));
+	objectMap->insert(std::pair<std::string, GameObject *> (n, obj));
 	scene->addGameObject(*obj);
 }
 
 //GameObject constructor
-GameObject::GameObject(int xLoc, int yLoc, int layer, string n, Image * newImage, int scale) {
+GameObject::GameObject(int xLoc, int yLoc, int layer, std::string n, Image * newImage, int scale) {
+	chunks = new std::list<Chunk*>();
 	x = xLoc * scale;
 	y = yLoc * scale;
 	l = layer;
@@ -54,7 +47,8 @@ GameObject::GameObject(int xLoc, int yLoc, int layer, string n, Image * newImage
 	maxVelocity = 0;
 	updateImage(newImage);
 }
-GameObject::GameObject(int xLoc, int yLoc, int layer, string n, int scale) {
+GameObject::GameObject(int xLoc, int yLoc, int layer, std::string n, int scale) {
+	chunks = new std::list<Chunk*>();
 	x = xLoc * scale;
 	y = yLoc * scale;
 	l = layer;
@@ -64,7 +58,8 @@ GameObject::GameObject(int xLoc, int yLoc, int layer, string n, int scale) {
 	maxVelocity = 0;
 	name = n;
 }
-GameObject::GameObject(string n) {
+GameObject::GameObject(std::string n) {
+	chunks = new std::list<Chunk*>();
 	x = 0;
 	y = 0;
 	l = 0;
@@ -75,6 +70,7 @@ GameObject::GameObject(string n) {
 	name = n;
 }
 GameObject::GameObject() {
+	chunks = new std::list<Chunk*>();
 	x = 0;
 	y = 0;
 	l = 0;
@@ -83,6 +79,41 @@ GameObject::GameObject() {
 	degrees = 0;
 	maxVelocity = 0;
 	name = "";
+}
+//update object chunks
+void GameObject::updateObjectChunks(SEngine * engine) {
+	double scale = (double)engine->getPixelScale();
+
+	int fromX = (int)round((x / 100.0)) - 1;
+	int toX = fromX + (int)ceil((w * scale / 100.0)) + 1;
+
+	int fromY = (int)round((y / 100.0)) - 1;
+	int toY = fromY + (int)ceil((h * scale / 100.0)) + 1;
+
+	std::list<Chunk*> tempChunks = *chunks;
+	std::list<Chunk*>::iterator iter = tempChunks.begin();
+
+	//remove out of region chunks
+	while (iter != tempChunks.end()) {
+		//chunk data
+		Chunk* chunk = *iter;
+		std::pair<int, int>* loc = chunk->getLocation();
+		int xC = loc->second;
+		int yC = loc->first;
+
+		//remove objects
+		if (xC < fromX || xC > toX || yC < fromY || yC > toY) {
+			chunk->removeGameObject(this);
+		}
+		iter++;
+	}
+
+	//add chunks
+	registerObjectToFrame(engine, this);
+}
+//add chunk addresses if not existing
+void GameObject::addChunkAddress(Chunk* chunk) {
+	if (std::find(chunks->begin(), chunks->end(), chunk) == chunks->end()) chunks->push_back(chunk);
 }
 //manage rotation
 double GameObject::getRotation() {
@@ -96,23 +127,23 @@ GameObject::~GameObject() {
 
 }
 //teleport
-mutex locationMutex;
+std::mutex locationMutex;
 void GameObject::teleport(int xLoc, int yLoc) {
-	lock_guard<mutex> lock(locationMutex);
+	std::lock_guard<std::mutex> lock(locationMutex);
 	x = xLoc;
 	y = yLoc;
 }
 //get name
-string GameObject::getName() {
+std::string GameObject::getName() {
 	return name;
 }
 //get location
 int GameObject::getX() {
-	lock_guard<mutex> lock(locationMutex);
+	std::lock_guard<std::mutex> lock(locationMutex);
 	return x;
 }
 int GameObject::getY() {
-	lock_guard<mutex> lock(locationMutex);
+	std::lock_guard<std::mutex> lock(locationMutex);
 	return y;
 }
 //get layer
@@ -139,10 +170,10 @@ Image * GameObject::getImage() {
 //add force
 Vector2D* safelyGetForce(GameObject* obj);
 void safelySetAddForceVector(GameObject* obj, Vector2D* vec);
-mutex addForceMutex;
+std::mutex addForceMutex;
 void GameObject::addForce(Vector2D vec) {
 	//thread lock
-	lock_guard<mutex> lock(addForceMutex);
+	std::lock_guard<std::mutex> lock(addForceMutex);
 
 	//get old vector
 	Vector2D * oldVec = safelyGetForce(this);

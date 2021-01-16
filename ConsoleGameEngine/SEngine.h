@@ -1,42 +1,26 @@
-#ifndef _LOG_H
-#define _LOG_H
+#ifndef _SENGINE_H
+#define _SENGINE_H
 
-#include <map>
-#include <list>
 #include <iostream>
+#include <map>
 #include <vector>
-#include <mutex>
-#include <exception>
+#include <list>
+#include <sstream>
+#include <cmath>
+#include <deque>
 #include <Windows.h>
 #include <thread>
+#include <mutex>
+#include <chrono>
+#include <cmath>
+#include <algorithm>
 
 #include "Utils.h"
 #include "DrawPixel.h"
 
-/*///////////////////////////
-* PIXEL
-*////////////////////////////
-
-class Pixel
-{
-private:
-	COLORREF COLOR;
-	int xOffset;
-	int l;
-	int layer;
-public:
-	Pixel(COLORREF color, int lenght, int offset);
-	Pixel(int lenght, int offset);
-	Pixel();
-	void setLenght(int lenght);
-	int getLenght();
-	void setLayer(int layer);
-	int getLayer();
-	void setOffset(int offset);
-	int getOffset();
-	void setColor(COLORREF color);
-	COLORREF getColor();
-};
+//classes
+class GameObject;
+class SEngine;
 
 /*///////////////////////////
 * IMAGE
@@ -46,12 +30,15 @@ class Image
 {
 private:
 	std::vector<std::vector<DrawPixel*>*> * image;
+	byte* byteImage;
 	ImageColorMap* cMap;
 public:
 	Image(ImageColorMap * colorMap);
 	Image();
+	void createByteImage(SEngine* engine);
 	void addLine(std::string line);
 	std::vector<std::vector<DrawPixel*>*> *& getVector();
+	byte* getByteImage();
 	int calcWidth();
 	int calcHeight();
 };
@@ -91,46 +78,8 @@ public:
 };
 
 /*///////////////////////////
-* GAME OBJECT
-*////////////////////////////
-
-class GameObject
-{
-private:
-	int x, y, l, h, w;
-	double degrees, maxVelocity;
-	std::string name;
-	Image * image;
-public:
-	GameObject(int xLoc, int yLoc, int layer, std::string n, Image * image, int scale);
-	GameObject(int xLoc, int yLoc, int layer, std::string n, int scale);
-	GameObject(std::string n);
-	GameObject();
-	~GameObject();
-	void teleport(int xLoc, int yLoc);
-	std::string getName();
-	double getRotation();
-	void setRotation(double degrees);
-	int getX();
-	int getY();
-	int getLayer();
-	int getHeight();
-	int getWidth();
-	void updateImage(Image * image);
-	Image * getImage();
-	void addForce(Vector2D vec);
-	Vector2D getVelocity();
-	void setMaxVelocity(double amount);
-	double getMaxVelocity();
-};
-
-void removeGameObject(GameObject * obj);
-GameObject * getGameObject(std::string name);
-GameObject * getUnsecureGameObject(std::string name);
-
-/*///////////////////////////
 * MAIN ENGINE FUNCTIONS
-*////////////////////////////
+*///////////////////////////
 
 class SEngine {
 private:
@@ -175,12 +124,70 @@ public:
 };
 
 /*///////////////////////////
+* Chunk
+*////////////////////////////
+
+class Chunk {
+private:
+	std::map<int, std::list<GameObject*>*>* objects;
+	std::pair<int, int>* loc;
+public:
+	Chunk(std::pair<int, int> location);
+	~Chunk();
+	std::pair<int, int>* getLocation();
+	void addGameObject(GameObject* obj, SEngine* engine);
+	void removeGameObject(GameObject* obj);
+	std::map<int, std::list<GameObject*>*> getGameObjects();
+};
+
+/*///////////////////////////
+* GAME OBJECT
+*////////////////////////////
+
+class GameObject
+{
+private:
+	int x, y, l, h, w;
+	double degrees, maxVelocity;
+	std::list<Chunk*>* chunks;
+	std::string name;
+	Image* image;
+public:
+	GameObject(int xLoc, int yLoc, int layer, std::string n, Image* image, int scale);
+	GameObject(int xLoc, int yLoc, int layer, std::string n, int scale);
+	GameObject(std::string n);
+	GameObject();
+	~GameObject();
+	void addChunkAddress(Chunk* chunk);
+	void updateObjectChunks(SEngine* engine);
+	void teleport(int xLoc, int yLoc);
+	std::string getName();
+	double getRotation();
+	void setRotation(double degrees);
+	int getX();
+	int getY();
+	int getLayer();
+	int getHeight();
+	int getWidth();
+	void updateImage(Image* image);
+	Image* getImage();
+	void addForce(Vector2D vec);
+	Vector2D getVelocity();
+	void setMaxVelocity(double amount);
+	double getMaxVelocity();
+};
+
+void removeGameObject(GameObject* obj);
+GameObject* getGameObject(std::string name);
+GameObject* getUnsecureGameObject(std::string name);
+
+/*///////////////////////////
 * SCENE CLASS AND FUNCTIONS
 *////////////////////////////
 
 class Scene {
 private:
-	std::vector<std::string> * objects;
+	std::vector<std::string>* objects;
 	int CameraStartX, CameraStartY;
 	std::string n;
 public:
@@ -191,7 +198,7 @@ public:
 	std::pair<int, int> getStartLocation();
 	void setStartX(int x);
 	void setStartY(int y);
-	std::vector<std::string> *& getObjectNames();
+	std::vector<std::string>*& getObjectNames();
 	void addGameObject(GameObject obj);
 	void removeGameObject(std::string name);
 	void setName(std::string name);
@@ -206,7 +213,6 @@ Scene* getActiveScene();
 void setActiveStartScene(Scene* scene);
 void setActiveStartScene(SEngine* engine, std::string name);
 Scene* getActiveStartScene();
-
 void registerGameObject(GameObject* obj, Scene* scene); // GameObject function
 
 /*///////////////////////////

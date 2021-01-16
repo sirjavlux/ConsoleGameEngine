@@ -1,103 +1,122 @@
-#include <iostream>
-
-#include "Chunk.h"
-
-extern const int colorSize = 100 * 100 * 3;
+#include "SEngine.h"
 
 Chunk::Chunk(std::pair<int, int> location) {
 	loc = new std::pair<int, int>(location.first, location.second);
-	objects = new std::list<GameObject*>();
-	pixels = new std::map<std::pair<int, int>, DrawPixel*>();
-	colors = nullptr;
-	colorsEnabled = false;
+	objects = new std::map<int, std::list<GameObject*>*>();
 }
 
 Chunk::~Chunk() {
 	delete loc;
 	delete objects;
-	delete pixels;
-	if (colors != nullptr) delete[] colors;
-}
-
-void Chunk::activateColorMap() {
-	if (colorsEnabled == false) {
-		colors = new byte[100 * 100 * 3]();
-		colorsEnabled = true;
-		updateColors();
-	}
-}
-
-void Chunk::dissableColorMap() {
-	if (colorsEnabled == true) {
-		if (colors != nullptr) delete[] colors;
-		colorsEnabled = false;
-	}
-}
-
-void Chunk::updateColors() {
-	if (colorsEnabled == true) {
-		std::map<std::pair<int, int>, DrawPixel*> safePixels = *pixels;
-		std::map<std::pair<int, int>, DrawPixel*>::iterator iter = safePixels.begin();
-		while (iter != safePixels.end()) {
-			COLORREF* colorPtr = iter->second->getColor();
-			int loc = iter->first.first * 300 + iter->first.second * 3;
-			iter++;
-
-			if (loc + 3 >= colorSize || loc <= 0) continue;
-			else if (colorPtr == nullptr) continue;
-
-			COLORREF color = *colorPtr;
-			const byte red = GetRValue(color);
-			const byte green = GetGValue(color);
-			const byte blue = GetBValue(color);
-			colors[loc] = blue; // blue
-			colors[loc + 1] = green; // green
-			colors[loc + 2] = red; // red
-		}
-	}
 }
 
 void Chunk::addGameObject(GameObject* obj, SEngine* engine) {
-	objects->push_back(obj);
-	updateGameObjectPixels(obj, engine);
+	std::list<GameObject*>* list = (*objects)[obj->getLayer()];
+	if (list == nullptr) {
+		list = new std::list<GameObject*>();
+		list->push_back(obj);
+		(*objects)[obj->getLayer()] = list;
+	}
+	else if (std::find(list->begin(), list->end(), obj) == list->end()) list->push_back(obj);
+	obj->addChunkAddress(this);
 }
 
 void Chunk::removeGameObject(GameObject* obj) {
-	objects->remove(obj);
+	std::list<GameObject*>* list = (*objects)[obj->getLayer()];
+	if (list != nullptr) list->remove(obj);
 }
 
-std::list<GameObject*> * Chunk::getGameObjects() {
-	return objects;
+std::map<int, std::list<GameObject*>*> Chunk::getGameObjects() {
+	return *objects;
 }
 
 std::pair<int, int> * Chunk::getLocation() {
 	return loc;
 }
 
-byte* Chunk::getPixelColors() {
-	return colors;
-}
+//update chunk <--------------- fix this for faster chunk updating, copy image byte map onto chunk color-map.
+/*
+void Chunk::updateChunkPixels(SEngine* engine) {
+	if (updateColors && colors != nullptr) {
+		std::map<int, std::list<GameObject*>*> tempObjects = *getGameObjects();
+		const int mapSize = (int)tempObjects.size();
+		int y = loc->first * 100;
+		int x = loc->second * 100;
 
-DrawPixel* Chunk::getPixel(int x, int y) {
-	return (*pixels)[std::pair<int, int>(y, x)];
-}
+		// loop trough layers
+		for (int i = 0; i < mapSize; i++) {
+			std::list<GameObject*>* tempObjectList = tempObjects[i];
+			if (tempObjectList == nullptr) continue; // go next if nullptr
 
-void Chunk::setPixel(int x, int y, DrawPixel * pixel) {
-	(*pixels)[std::pair<int, int>(y, x)] = pixel;
-}
+			// loop trough every object in the chunk and layer
+			std::list<GameObject*>::iterator iter = tempObjectList->begin();
+			while (iter != tempObjectList->end()) {
+				GameObject* obj = *iter;
+				byte* byteMap = obj->getImage()->getByteImage();
+				const double scale = (double)engine->getPixelScale();
 
-void Chunk::setColor(int x, int y, COLORREF* colorPntr) {
-	int loc = y * 100 * 3 + x * 3;
-	if (loc + 3 >= colorSize || loc <= 0) return;
-	COLORREF color = *colorPntr;
-	const byte red = GetRValue(color);
-	const byte green = GetGValue(color);
-	const byte blue = GetBValue(color);
-	colors[loc] = blue; // blue
-	colors[loc + 1] = green; // green
-	colors[loc + 2] = red; // red
-}
+				// object data
+				double rotation = obj->getRotation();
+				const double objLocX = (double)obj->getX();
+				const double objLocY = (double)obj->getY();
+				const double objWidth = (double)obj->getWidth() * scale;
+				const double objHeight = (double)obj->getHeight() * scale;
+				const int row = objWidth * 3;
+				const int objSize = objWidth * objHeight * 3;
 
+				// calculate image offset from chunk
+				const double offsetY = objLocY - y;
+				const double offsetX = objLocX - x;
+
+				// calculate in chunk image parts
+				const int minImageY = offsetY > 0 ? 0 : offsetY * -1;
+				const int minImageX = offsetX > 0 ? 0 : offsetX * -1;
+				int maxImageY = objLocY + objHeight - y;
+				int maxImageX = objLocX + objWidth - x;
+				int imageYIncrement = minImageY * row;
+				int imageXIncrement = minImageX * 3;
+				if (maxImageY - minImageY > 100) maxImageY += 100 - (maxImageY - minImageY);
+				if (maxImageX - minImageX > 100) maxImageX += 100 - (maxImageX - minImageX);
+
+				//int imageYIncrement = -scale / 2; // used for getting current image y loc
+				//int imageXIncrement = -scale / 2; // used for getting current image x loc
+
+				// calculate chunk start / end points
+				const int startY = offsetY < 0 ? 0 : offsetY;
+				const int startX = offsetX < 0 ? 0 : offsetX;
+				const int endY = maxImageY - minImageY > 100 ? 100 : maxImageY - minImageY;
+				const int endX = maxImageX - minImageX > 100 ? 100 : maxImageX - minImageX;
+
+				for (int i = startY; i < endY; i++) {
+					for (int i2 = startX; i2 < endX; i2++) {
+						int loc = i * 300 + i2 * 3;
+						int imageLoc = imageYIncrement + imageXIncrement;
+
+						colors[loc] = byteMap[imageLoc];
+						colors[loc + 1] = byteMap[imageLoc + 1];
+						colors[loc + 2] = byteMap[imageLoc + 2];
+
+						imageXIncrement += 3;
+					}
+					imageXIncrement = minImageX * 3;
+					imageYIncrement += row;
+				}
+
+				iter++;
+			}
+		}
+	}
+
+	updateChunk = false;
+}
+*/
+//update chunk with new object
+
+/*///////////////////////////////////////////////////////////////////////////
+ REPLACE THIS METHOD WITH THE ONE ABOVE, LOOPING TROUGH ALL OBJECTS
+*////////////////////////////////////////////////////////////////////////////
+
+/*
 void Chunk::updateGameObjectPixels(GameObject* obj, SEngine * engine) {
 	Image* image = obj->getImage();
 	std::vector< std::vector<DrawPixel*> *> * pixelVec = image->getVector();
@@ -113,18 +132,11 @@ void Chunk::updateGameObjectPixels(GameObject* obj, SEngine * engine) {
 	int objWidthOriginal = obj->getWidth();
 	int objHeightOriginal = obj->getHeight();
 	int layer = obj->getLayer();
-
-	/*//////////////////////////
-	* if rotation
-	*///////////////////////////
+	obj->addChunkAddress(this); // add chunk address for movement chaning later
 
 	if (rotation > 0.0) {
 
 	}
-	
-	/*//////////////////////////
-	* no rotation
-	*///////////////////////////
 
 	else {
 		// calculate image offset from chunk
@@ -178,3 +190,4 @@ void Chunk::updateGameObjectPixels(GameObject* obj, SEngine * engine) {
 	}
 	updateColors();
 }
+*/

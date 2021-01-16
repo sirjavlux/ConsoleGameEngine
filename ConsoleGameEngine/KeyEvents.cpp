@@ -6,53 +6,41 @@ using namespace std;
 
 void keyAUpdateEvent(KeyState state, SEngine* engine) {
 	if (state == KeyState::down) {
-		engine->teleportCamera(engine->getCameraX() - 6, engine->getCameraY());
-		/*
 		if (engine->hasCameraObjectAttatched()) {
 			GameObject* obj = engine->getCameraFollowObject();
 			Vector2D vel(-1, 0);
 			obj->addForce(vel);
 		}
-		*/
 	}
 }
 
 void keyWUpdateEvent(KeyState state, SEngine* engine) {
 	if (state == KeyState::down) {
-		engine->teleportCamera(engine->getCameraX(), engine->getCameraY() + 6);
-		/*
 		if (engine->hasCameraObjectAttatched()) {
 			GameObject* obj = engine->getCameraFollowObject();
 			Vector2D vel(0, 1);
 			obj->addForce(vel);
 		}
-		*/
 	}
 }
 
 void keySUpdateEvent(KeyState state, SEngine* engine) {
 	if (state == KeyState::down) {
-		engine->teleportCamera(engine->getCameraX(), engine->getCameraY() - 6);
-	/*
 		if (engine->hasCameraObjectAttatched()) {
 			GameObject* obj = engine->getCameraFollowObject();
 			Vector2D vel(0, -1);
 			obj->addForce(vel);
 		}
-		*/
 	}
 }
 
 void keyDUpdateEvent(KeyState state, SEngine* engine) {
 	if (state == KeyState::down) {
-		engine->teleportCamera(engine->getCameraX() + 6, engine->getCameraY());
-	/*
 		if (engine->hasCameraObjectAttatched()) {
 			GameObject* obj = engine->getCameraFollowObject();
 			Vector2D vel(1, 0);
 			obj->addForce(vel);
 		}
-		*/
 	}
 }
 

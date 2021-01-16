@@ -1,4 +1,5 @@
-#ifndef LOG
+#ifndef LOG_
+#define LOG_
 
 #include <iostream>
 #include <map>

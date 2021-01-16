@@ -4,10 +4,6 @@
 * For demonstration purposes, an example game is provided.
 *//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
-#include <cmath>
-#include <sstream>
-
 #include "SEngine.h"
 
 // this function gets called before the game starts.
@@ -33,7 +29,7 @@ void onEnable(SEngine* engine) {
 	cMap->setColor('R', RGB(255, 150, 238));
 
 	//ship object
-	GameObject* ship = new GameObject(-102, -17, 3, "ship", engine->getPixelScale());
+	GameObject* ship = new GameObject(0, 0, 2, "ship", engine->getPixelScale());
 	Image * shipImage = new Image(cMap);
 	shipImage->addLine("       H       ");
 	shipImage->addLine("       H       ");
@@ -49,6 +45,7 @@ void onEnable(SEngine* engine) {
 	shipImage->addLine("HHHTTTHTDTTTTHH");
 	shipImage->addLine("  B  HT HT  B  ");
 	shipImage->addLine("     B   B     ");
+	shipImage->createByteImage(engine);
 	ship->updateImage(shipImage);
 	ship->setRotation(0);
 	ship->setMaxVelocity(20);
@@ -68,13 +65,14 @@ void onEnable(SEngine* engine) {
 	int starGenWidth = 2000;
 	int starGenHeight = 2000;
 
-	int smallStars = 30000;
+	int smallStars = 40000;
 	int mediumStars = 4000;
 	int largeStars = 2000;
 
 	//small stars
 	Image * smallStarImage = new Image(cMap);
 	smallStarImage->addLine("W");
+	smallStarImage->createByteImage(engine);
 	for (int i = 0; i < smallStars; i++) {
 
 		int x = starGenLocationX + (std::rand() % (starGenWidth - starGenLocationX + 1));
@@ -83,7 +81,7 @@ void onEnable(SEngine* engine) {
 		std::stringstream stm;
 		stm << "star_small_" << i;
 
-		GameObject* smallStar = new GameObject(x, y, 0, stm.str(), engine->getPixelScale());
+		GameObject* smallStar = new GameObject(x, y, 1, stm.str(), engine->getPixelScale());
 		smallStar->updateImage(smallStarImage);
 		registerGameObject(smallStar, scene);
 	}
@@ -93,6 +91,7 @@ void onEnable(SEngine* engine) {
 	mediumStarImage->addLine(" W ");
 	mediumStarImage->addLine("WWW");
 	mediumStarImage->addLine(" W ");
+	mediumStarImage->createByteImage(engine);
 	for (int i = 0; i < mediumStars; i++) {
 
 		int x = starGenLocationX + (std::rand() % (starGenWidth - starGenLocationX + 1));
@@ -101,7 +100,7 @@ void onEnable(SEngine* engine) {
 		std::stringstream stm;
 		stm << "star_medium_" << i;
 
-		GameObject* mediumStar = new GameObject(x, y, 0, stm.str(), engine->getPixelScale());
+		GameObject* mediumStar = new GameObject(x, y, 1, stm.str(), engine->getPixelScale());
 		mediumStar->updateImage(mediumStarImage);
 		registerGameObject(mediumStar, scene);
 	}
@@ -113,6 +112,7 @@ void onEnable(SEngine* engine) {
 	largeStarImage->addLine("WWWWW");
 	largeStarImage->addLine(" WWW ");
 	largeStarImage->addLine("  W  ");
+	largeStarImage->createByteImage(engine);
 	for (int i = 0; i < largeStars; i++) {
 
 		int x = starGenLocationX + (std::rand() % (starGenWidth - starGenLocationX + 1));
@@ -121,9 +121,25 @@ void onEnable(SEngine* engine) {
 		std::stringstream stm;
 		stm << "star_large_" << i;
 
-		GameObject* largeStar = new GameObject(x, y, 0, stm.str(), engine->getPixelScale());
+		GameObject* largeStar = new GameObject(x, y, 1, stm.str(), engine->getPixelScale());
 		largeStar->updateImage(largeStarImage);
 		registerGameObject(largeStar, scene);
+	}
+
+	/*//////////////////////
+	* Performance test
+	*///////////////////////
+
+	Image* performanceImage = new Image(cMap);
+	int lines = 180;
+	for (int i = 0; i < lines; i++) performanceImage->addLine("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
+	performanceImage->createByteImage(engine);
+	for (int i = 0; i < 1; i++) {
+		std::stringstream stm;
+		stm << "performance_" << i;
+		GameObject* performance = new GameObject(-90, -50, 0, stm.str(), engine->getPixelScale());
+		performance->updateImage(performanceImage);
+		registerGameObject(performance, scene);
 	}
 }
 

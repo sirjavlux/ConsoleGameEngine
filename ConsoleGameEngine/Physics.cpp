@@ -119,6 +119,7 @@ void moveObjects(SEngine* engine) {
 
 		// move object
 		obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+		obj->updateObjectChunks(engine);
 
 		iter++;
 	}

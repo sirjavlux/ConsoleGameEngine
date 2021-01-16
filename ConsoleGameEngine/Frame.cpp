@@ -14,7 +14,6 @@
 #include <mutex>
 #include <math.h>
 
-#include "Chunk.h"
 #include "SEngine.h"
 #include "Utils.h"
 #include "DefinedImageColors.h"
@@ -89,8 +88,8 @@ void setPixel(int xPixLoc, int yPixLoc, int cameraX, int cameraY, int width, int
 		//start rendering
 		for (int i3 = 0; i3 < scale; i3++) {
 			for (int i4 = 0; i4 < scale * lenght; i4++) {
-				int y = rotationOriginY + (int) round(i4 * cs + i3 * ss + rotationY);
-				int x = rotationOriginX + (int) round(i4 * ss - i3 * cs + rotationX);
+				int y = (int)rotationOriginY + (int)round(i4 * cs + i3 * ss + rotationY);
+				int x = (int)rotationOriginX + (int)round(i4 * ss - i3 * cs + rotationX);
 
 				const int currRow = y - cameraY;
 				const int rowLoc = currRow * row;
@@ -140,10 +139,26 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 	SetDIBitsToDevice(engine->getDC(), 0, 0, width, height, 0, 0, 0, height, data, &bmpi, DIB_RGB_COLORS);
 }
 
+//set pixel at pixel location
+std::mutex pixelMutex;
+void setPixelAtLocation(const int frameLoc, const int colorLoc, byte* byteImage) {
+	std::lock_guard<std::mutex> lock(pixelMutex);
+	if (byteImage[colorLoc] == 0 && byteImage[colorLoc + 1] == 0 && byteImage[colorLoc + 2] == 0) return;
+	data[frameLoc] = byteImage[colorLoc]; // blue
+	data[frameLoc + 1] = byteImage[colorLoc + 1]; // green
+	data[frameLoc + 2] = byteImage[colorLoc + 2]; // red
+}
+
 //calculate pixels based on object images
 std::list<Chunk*> safelyGetChunksInFrame();
-void calculateImages(std::list<Chunk*> * frame, int width, int height, int from, int to, int cameraX, int cameraY, SEngine* engine) {
-	std::list<Chunk*>::iterator iter = frame->begin();
+void calculateImages(std::list<GameObject*> 	
+	frame,
+	const int width, const int height, 
+	const int from, const int to, 
+	int cameraX, int cameraY, 
+	SEngine* engine) {
+
+	std::list<GameObject*>::iterator iter = frame.begin();
 	std::advance(iter, from);
 	int toMove = to - from;
 	int count = 0;
@@ -151,55 +166,86 @@ void calculateImages(std::list<Chunk*> * frame, int width, int height, int from,
 	const int row = 3 * width;
 	const int size = width * height * 3;
 	const int scale = engine->getPixelScale();
-	// start looping trough chunks
-	while (iter != frame->end()) {
-		if (count >= toMove) break;
+	// start looping trough objects
+	while (iter != frame.end()) {
+		count++;
+		if (count > toMove) break;
 		else {
-			// get chunk data
-			Chunk* chunk = *iter;
-			int y = chunk->getLocation()->first * 100;
-			int x = chunk->getLocation()->second * 100;
-			byte* colors = chunk->getPixelColors();
+			// frame data 
+			const int frameRow = width * 3;
 
-			// calculate y axis
-			const int offsetY = y - cameraY;
+			// object data
+			GameObject* obj = *iter;
+			iter++;
+			if (obj == nullptr) continue;
+			//if (obj == engine->getCameraFollowObject()) engine->updateCamera();
+			byte* byteImage = obj->getImage()->getByteImage();
+			if (byteImage == nullptr) continue;
+			const double rotation = obj->getRotation();
+			const int objWidth = obj->getWidth() * scale;
+			const int objHeight = obj->getHeight() * scale;
+			const int objXMin = obj->getX(); int objXMax = objXMin + objWidth;
+			const int objYMin = obj->getY(); int objYMax = objYMin + objHeight;
+			const int row = objWidth * 3;
+			const int imageSize = objWidth * objHeight * 3;
 
-			// calculate x axis
-			const int offsetX = x - cameraX;
-			const int scaledOffsetX = offsetX * 3;
+			/*////////////////////
+			* IF ROTATION
+			*/////////////////////
 
-			// frame data
-			const int startRow = offsetY * row;
-			int currentRow = startRow;
-			int currentColorRow = 0;
-			int xIncrement = 0;
+			if (rotation > 0) {
 
-			for (int i = 0; i < 100; i++) {
-				for (int i2 = 0; i2 < 100; i2++) {
-					int placeX = scaledOffsetX + xIncrement;
-					int colorLoc = currentColorRow + xIncrement;
-					xIncrement += 3;
+			}
 
-					if (placeX >= row || placeX <= 0) continue;
-					int loc = currentRow + placeX;
-					if (loc >= size || loc < 0) continue;
-					
-					if (colors == nullptr) break;
-					data[loc] = colors[colorLoc]; // blue
-					data[loc + 1] = colors[colorLoc + 1]; // green
-					data[loc + 2] = colors[colorLoc + 2]; // red
+			/*////////////////////
+			* IF NO ROTATION
+			*/////////////////////
+
+			else {
+				// frame/camera data y axis
+				const int offsetY = objYMin - cameraY;
+				const int yFrameOffset = offsetY < 0 ? 0 : offsetY;
+				const int yImageMin = offsetY < 0 ? offsetY * -1 : 0;
+				const int yImageMax = objHeight - (objYMax - (cameraY + height) < 0 ? 0 : objYMax - (cameraY + height));
+
+				// frame/camera data x axis
+				const int offsetX = objXMin - cameraX;
+				const int xFrameOffset = (offsetX < 0 ? 0 : offsetX) * 3;
+				const int xImageMin = offsetX < 0 ? offsetX * -1 : 0;
+				const int xImageMax = objWidth - (objXMax - (cameraX + width) < 0 ? 0 : objXMax - (cameraX + width));
+
+				// loop data
+				int currentRow = yImageMin * row;
+				const int startXIncrement = xImageMin * 3;
+				int xIncrement = startXIncrement;
+
+				int currentFrameRow = yFrameOffset * frameRow;
+				int frameXIncrement = xFrameOffset;
+
+				// loop trough image
+				for (int y = yImageMin; y < yImageMax; y++) {
+					for (int x = xImageMin; x < xImageMax; x++) {
+
+						int colorLoc = imageSize - (currentRow + xIncrement);
+						int frameLoc = currentFrameRow + frameXIncrement;
+
+						xIncrement += 3;
+						frameXIncrement += 3;
+
+						setPixelAtLocation(frameLoc, colorLoc, byteImage); // set final pixel
+					}
+					frameXIncrement = xFrameOffset;
+					xIncrement = startXIncrement;
+					currentRow += row;
+					currentFrameRow += frameRow;
 				}
-				xIncrement = 0;
-				currentRow += row;
-				currentColorRow += 300;
 			}
 		}
-		count++;
-		iter++;
 	}
 }
 
 //draw frame on console
+std::map<int, std::list<GameObject*>*> safelyGetGameObjects();
 void drawFrame(SEngine * engine) {
 
 	const int width = getScreenWidth();
@@ -218,31 +264,40 @@ void drawFrame(SEngine * engine) {
 	const int cameraX = engine->getCameraX() - width / 2;
 	const int cameraY = engine->getCameraY() - height / 2;
 
-	std::list<Chunk*> frame = safelyGetChunksInFrame();
-	
-	const double chunkSize = frame.size();
+	std::map<int, std::list<GameObject*>*> frame = safelyGetGameObjects();
+	std::map<int, std::list<GameObject*>*>::iterator iter = frame.begin();
+	while (iter != frame.end()) {
+		if (iter->second == nullptr) {
+			iter++;
+			continue;
+		}
+		std::list<GameObject*> objects = *(iter->second);
+		const int frameSize = (int)objects.size();
 
-	//calculate threads needed
-	const int threadCap = 8;
-	int threadsToUse = 2;
-	if (threadsToUse > threadCap) threadsToUse = threadCap;
-	else if (threadsToUse < 1) threadsToUse = 1;
-	if (threadsToUse == 1) {
-		calculateImages(&frame, width, height, 0, chunkSize, cameraX, cameraY, engine);
-	}
-	else {
-		std::vector<std::thread> threads;
-		//do tasks
-		double increment = 1.0 / threadsToUse;
-		double begin = 0;
-		for (int i = 0; i < threadsToUse; i++) {
-			threads.push_back(std::thread(calculateImages, &frame, width, height, (int)(chunkSize * begin), (int)(chunkSize * (begin + increment)), cameraX, cameraY, engine));
-			begin += increment;
+		//calculate threads needed
+		const int threadCap = 1;
+		int threadsToUse = frameSize / 40;
+		if (threadsToUse > threadCap) threadsToUse = threadCap;
+		else if (threadsToUse < 1) threadsToUse = 1;
+		if (threadsToUse == 1) {
+			calculateImages(objects, width, height, 0, (int)frameSize, cameraX, cameraY, engine);
 		}
-		//finish tasks 
-		for (int i = 0; i < threadsToUse; i++) {
-			threads.at(i).join();
+		else {
+			std::vector<std::thread> threads;
+			//do tasks
+			double increment = 1.0 / threadsToUse;
+			double begin = 0;
+			for (int i = 0; i < threadsToUse; i++) {
+				threads.push_back(std::thread(calculateImages, objects, width, height, (int)(frameSize * begin), (int)(frameSize * (begin + increment)), cameraX, cameraY, engine));
+				begin += increment;
+			}
+			//finish tasks 
+			for (int i = 0; i < threadsToUse; i++) {
+				threads.at(i).join();
+			}
 		}
+
+		iter++;
 	}
 
 	//draw frame

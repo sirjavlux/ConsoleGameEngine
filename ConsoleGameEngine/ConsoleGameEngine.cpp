@@ -143,14 +143,12 @@ int SEngine::getCameraFollowOffsetY() {
 }
 void SEngine::updateCamera() {
 	if (hasCameraObjectAttatched()) {
-		/*
 		//update camera following object
 		GameObject * obj = getCameraFollowObject();
 		int x = obj->getX();
 		int y = obj->getY();
 		cameraX = x + cameraFollowOffsetX;
 		cameraY = y + cameraFollowOffsetY;
-		*/
 	}
 }
 /*///////////////////////////////

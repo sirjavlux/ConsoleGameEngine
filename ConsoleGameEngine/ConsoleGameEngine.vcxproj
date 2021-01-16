@@ -162,14 +162,12 @@
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="Physics.cpp" />
-    <ClCompile Include="Pixel.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="UpdateTick.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Vector2D.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Chunk.h" />
     <ClInclude Include="DefinedImageColors.h" />
     <ClInclude Include="DrawPixel.h" />
     <ClInclude Include="SEngine.h" />

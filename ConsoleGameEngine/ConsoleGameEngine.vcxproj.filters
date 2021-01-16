@@ -60,9 +60,6 @@
     <ClCompile Include="Exceptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Pixel.cpp">
-      <Filter>InGame</Filter>
-    </ClCompile>
     <ClCompile Include="ImageColorMap.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -102,9 +99,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DrawPixel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
