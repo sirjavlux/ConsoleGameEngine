@@ -154,6 +154,7 @@ void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte* byte
 	for (int y2 = 0; y2 < scale; y2++) {
 		for (int x2 = 0; x2 < scale; x2++) {
 			int frameLoc = frameLocScaled + finalYIncrement + finalXIncrement;
+			if (frameLoc < 0) continue;
 			data[frameLoc] = b; // blue
 			data[frameLoc + 1] = g; // green
 			data[frameLoc + 2] = r; // red
@@ -221,22 +222,22 @@ void calculateImages(std::list<GameObject*>
 			else {
 				// frame/camera data y axis
 				const int offsetY = objYMin - cameraY;
-				const int yFrameOffset = offsetY < 0 ? 0 : offsetY;
 				const int yImageMin = (offsetY < 0 ? offsetY * -1 : 0) / scale;
 				const int yImageMax = (objHeight - (objYMax - (cameraY + height) < 0 ? 0 : objYMax - (cameraY + height))) / scale;
 
 				// frame/camera data x axis
 				const int offsetX = objXMin - cameraX;
-				const int xFrameOffset = (offsetX < 0 ? 0 : offsetX) * 3;
 				int xImageMin = (offsetX < 0 ? offsetX * -1 : 0) / scale;
 				const int xImageMax = (objWidth - (objXMax - (cameraX + width) < 0 ? 0 : objXMax - (cameraX + width))) / scale;
 
 				// loop data
-				int currentRow = yImageMin * row;
-				const int startXIncrement = xImageMin * 3;
-				int xIncrement = startXIncrement;
+				const int startPixelHeight = (offsetY < 0 ? offsetY * -1 : 0) - yImageMin * scale;
+				const int startPixelLenght = ((offsetX < 0 ? offsetX * -1 : 0) - xImageMin * scale) * 3;
 
+				const int yFrameOffset = (offsetY < 0 ? 0 : offsetY) - startPixelHeight;
 				int currentFrameRow = yFrameOffset * frameRow;
+
+				const int xFrameOffset = (offsetX < 0 ? 0 : offsetX) * 3 - startPixelLenght;
 				int frameXIncrement = xFrameOffset;
 
 				// loop trough pixels
@@ -247,10 +248,10 @@ void calculateImages(std::list<GameObject*>
 
 						// place pixels
 						setPixelAtLocation(frameLocScaled, colorLoc, byteImage, scale, frameRow);
-						frameXIncrement += 30;
+						frameXIncrement += 3 * scale;
 					}
 					frameXIncrement = xFrameOffset;
-					currentFrameRow += frameRow * 10;
+					currentFrameRow += frameRow * scale;
 				}
 			}
 		}
