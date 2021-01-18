@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int physicsSpeed = 50;
+const int physicsSpeed = 60;
 
 //physics loop
 void moveObjects(SEngine* engine);
@@ -98,6 +98,7 @@ map<GameObject*, Vector2D*> * safelyGetAddForceObjects() {
 }
 
 // loop trough objects, modify vectors and move objects
+void teleportObjectSafely(GameObject* obj, int xMoveAmount, int yMoveAmount);
 void moveObjects(SEngine* engine) {
 	map<GameObject*, Vector2D*> * objectMap = safelyGetAddForceObjects();
 	map<GameObject*, Vector2D*>::iterator iter = objectMap->begin();
@@ -118,9 +119,14 @@ void moveObjects(SEngine* engine) {
 		}
 
 		// move object
-		obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
+		teleportObjectSafely(obj, xMoveAmount, yMoveAmount);
 		obj->updateObjectChunks(engine);
 
 		iter++;
 	}
+}
+std::mutex* getDrawFrameMutex();
+void teleportObjectSafely(GameObject* obj, int xMoveAmount, int yMoveAmount) {
+	std::lock_guard<std::mutex> lock(*getDrawFrameMutex());
+	obj->teleport(obj->getX() + xMoveAmount, obj->getY() + yMoveAmount);
 }

@@ -234,7 +234,7 @@ void updateObjectsInFrame(SEngine * engine) {
 }
 
 //find all objects and decide wether to keep them
-int objectSearchDelay = 60;
+int objectSearchDelay = 20;
 void findObjectsInFrame(SEngine* engine) {
 	while (engine->isGameRunning()) {
 		//get start time

@@ -141,7 +141,7 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 
 //set pixel at pixel location
 std::mutex pixelMutex;
-byte* getColorValues(byte* byteImage, const int colorLoc) {
+byte* getColorValues(byte*& byteImage, const int colorLoc) {
 	//std::lock_guard<std::mutex> lock(pixelMutex);
 	byte color[3] = {
 	byteImage[colorLoc],
@@ -152,7 +152,8 @@ byte* getColorValues(byte* byteImage, const int colorLoc) {
 	return color;
 }
 
-void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte* byteImage, const int scale, const int frameRow) {
+void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte*& byteImage, const int scale, const int frameRow) {
+	
 	byte* color = getColorValues(byteImage, colorLoc);
 	byte b = color[0];
 	byte g = color[1];
@@ -166,7 +167,7 @@ void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte* byte
 	for (int y2 = 0; y2 < scale; y2++) {
 		for (int x2 = 0; x2 < scale; x2++) {
 			int frameLoc = frameLocScaled + finalYIncrement + finalXIncrement;
-			if (frameLoc < 0) continue;
+			if (frameLoc < 0) break;
 			data[frameLoc] = b; // blue
 			data[frameLoc + 1] = g; // green
 			data[frameLoc + 2] = r; // red
@@ -316,7 +317,7 @@ void drawFrame(SEngine * engine) {
 			pixels += obj->getHeight() * obj->getWidth();
 
 			// add index if pixel requirements are met
-			if (pixels >= 32000) {
+			if (pixels >= 64000) {
 				indexes.push_back(index);
 				pixels = 0;
 			}
@@ -366,6 +367,16 @@ void drawFrame(SEngine * engine) {
 }
 
 //frame drawing loop
+std::mutex * frameMutex = new std::mutex();
+void updateAndDrawFrame(SEngine* engine) {
+	std::lock_guard<std::mutex> lock(*frameMutex);
+	//create and draw frame
+	engine->updateCamera();
+	drawFrame(engine);
+}
+std::mutex * getDrawFrameMutex() {
+	return frameMutex;
+}
 void startConsoleDraw(SEngine* engine) {
 	//setup bmih
 	bmih.biBitCount = 24;
@@ -382,7 +393,7 @@ void startConsoleDraw(SEngine* engine) {
 		auto start = std::chrono::steady_clock::now();
 
 		//create and draw frame
-		drawFrame(engine);
+		updateAndDrawFrame(engine);
 
 		//get end time
 		auto end = std::chrono::steady_clock::now();
