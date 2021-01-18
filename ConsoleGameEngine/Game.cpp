@@ -134,7 +134,7 @@ void onEnable(SEngine* engine) {
 	int lines = 180;
 	for (int i = 0; i < lines; i++) performanceImage->addLine("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
 	performanceImage->createByteImage(engine);
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < 0; i++) {
 		std::stringstream stm;
 		stm << "performance_" << i;
 		GameObject* performance = new GameObject(-90, -50, 0, stm.str(), engine->getPixelScale());

@@ -141,11 +141,23 @@ void drawPixelsToScreen(SEngine * engine, int width, int height) {
 
 //set pixel at pixel location
 std::mutex pixelMutex;
+byte* getColorValues(byte* byteImage, const int colorLoc) {
+	//std::lock_guard<std::mutex> lock(pixelMutex);
+	byte color[3] = {
+	byteImage[colorLoc],
+	byteImage[colorLoc + 1],
+	byteImage[colorLoc + 2] 
+	};
+
+	return color;
+}
+
 void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte* byteImage, const int scale, const int frameRow) {
-	std::lock_guard<std::mutex> lock(pixelMutex);
-	byte b = byteImage[colorLoc];
-	byte g = byteImage[colorLoc + 1];
-	byte r = byteImage[colorLoc + 2];
+	byte* color = getColorValues(byteImage, colorLoc);
+	byte b = color[0];
+	byte g = color[1];
+	byte r = color[2];
+
 	if (b == 0 && g == 0 && r == 0) return;
 
 	// place pixel
@@ -165,13 +177,17 @@ void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte* byte
 	}
 }
 
+/*/////////////////////////////
+FIX Y AXIS TOP SCREEN GLITCH
+*//////////////////////////////
+
 //calculate pixels based on object images
 std::list<Chunk*> safelyGetChunksInFrame();
-void calculateImages(std::list<GameObject*> 	
+void calculateImages(std::list<GameObject*>
 	frame,
-	const int width, const int height, 
-	const int from, const int to, 
-	int cameraX, int cameraY, 
+	const int width, const int height,
+	const int from, const int to,
+	int cameraX, int cameraY,
 	SEngine* engine) {
 
 	std::list<GameObject*>::iterator iter = frame.begin();
@@ -266,7 +282,7 @@ void drawFrame(SEngine * engine) {
 	const int height = getScreenHeight();
 	const int scale = engine->getPixelScale();
 
-	//setup pixel drawing
+	// setup pixel drawing
 	const int size = width * height * 3;
 	if (size != oldSize) {
 		updateFrameDrawSize(width, height);
@@ -286,27 +302,51 @@ void drawFrame(SEngine * engine) {
 			continue;
 		}
 		std::list<GameObject*> objects = *(iter->second);
+
 		const int frameSize = (int)objects.size();
 
-		//calculate threads needed
-		const int threadCap = 1;
-		int threadsToUse = frameSize / 40;
-		if (threadsToUse > threadCap) threadsToUse = threadCap;
-		else if (threadsToUse < 1) threadsToUse = 1;
-		if (threadsToUse == 1) {
+		// calculate thread chunks to process
+		std::deque<int> indexes;
+		std::list<GameObject*>::iterator objIter = objects.begin();
+		int index = 0;
+		int pixels = 0;
+		while (objIter != objects.end()) {
+			// add pixel size from object to pixel amount
+			GameObject* obj = *objIter;
+			pixels += obj->getHeight() * obj->getWidth();
+
+			// add index if pixel requirements are met
+			if (pixels >= 32000) {
+				indexes.push_back(index);
+				pixels = 0;
+			}
+
+			// increment
+			index++;
+			objIter++;
+		}
+
+		// add last index to indexes if not existing
+		if (indexes.size() > 0) if (indexes.back() < objects.size()) indexes.push_back((int)objects.size());
+
+		// calculate threads needed
+		if (indexes.size() <= 1) {
 			calculateImages(objects, width, height, 0, (int)frameSize, cameraX, cameraY, engine);
 		}
 		else {
 			std::vector<std::thread> threads;
+			std::deque<int>::iterator indexIter = indexes.begin();
+
 			//do tasks
-			double increment = 1.0 / threadsToUse;
-			double begin = 0;
-			for (int i = 0; i < threadsToUse; i++) {
-				threads.push_back(std::thread(calculateImages, objects, width, height, (int)(frameSize * begin), (int)(frameSize * (begin + increment)), cameraX, cameraY, engine));
-				begin += increment;
+			int lastIndex = 0;
+			while (indexIter != indexes.end()) {
+				int nextIndex = *indexIter;
+				threads.push_back(std::thread(calculateImages, objects, width, height, lastIndex, nextIndex, cameraX, cameraY, engine));
+				lastIndex = nextIndex;
+				indexIter++;
 			}
 			//finish tasks 
-			for (int i = 0; i < threadsToUse; i++) {
+			for (int i = 0; i < threads.size(); i++) {
 				threads.at(i).join();
 			}
 		}
