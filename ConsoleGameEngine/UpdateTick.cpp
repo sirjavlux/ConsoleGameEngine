@@ -8,7 +8,6 @@
 //this updates once every tick
 void UpdateTick(SEngine * engine) {
 
-	/*
 	//set rotation
 	if (engine->hasCameraObjectAttatched()) {
 		GameObject* obj = engine->getCameraFollowObject();
@@ -19,5 +18,4 @@ void UpdateTick(SEngine * engine) {
 			obj->setRotation(degrees);
 		}
 	}
-	*/
 }

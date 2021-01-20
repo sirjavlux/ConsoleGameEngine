@@ -60,14 +60,15 @@ void onEnable(SEngine* engine) {
 	//create space background
 	
 	//place stars randomly based on predefined variables
-	int starGenLocationX = -2000;
-	int starGenLocationY = -2000;
-	int starGenWidth = 2000;
-	int starGenHeight = 2000;
+	int universeSize = 4;
+	int starGenLocationX = -1000 * universeSize;
+	int starGenLocationY = -1000 * universeSize;
+	int starGenWidth = 1000 * universeSize;
+	int starGenHeight = 1000 * universeSize;
 
-	int smallStars = 40000;
-	int mediumStars = 4000;
-	int largeStars = 2000;
+	int smallStars = 10000 * universeSize * 4;
+	int mediumStars = 3000 * universeSize * 4;
+	int largeStars = 1000 * universeSize * 4;
 
 	//small stars
 	Image * smallStarImage = new Image(cMap);

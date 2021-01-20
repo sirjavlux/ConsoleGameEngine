@@ -131,6 +131,13 @@ std::map<int, std::list<GameObject*>*> safelyGetGameObjects() {
 	return objectsInFrame;
 }
 
+std::list<GameObject*> safelyGetGameObjectsFromLayer(int layer) {
+	std::lock_guard<std::mutex> lock(objectsMutex);
+	std::list<GameObject*>* list = objectsInFrame[layer];
+	if (list == nullptr) return std::list<GameObject*>();
+	return *list;
+}
+
 // safely clear old objects
 void safeClear() {
 	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
@@ -199,7 +206,7 @@ void updateObjectsInFrame(SEngine * engine) {
 	std::map<int, std::list<GameObject*>*>::iterator objMapIter = objectMap.begin();
 	while (objMapIter != objectMap.end()) {
 		if (objMapIter->second != nullptr) {
-			std::list<GameObject*> objects = *(objMapIter->second);
+			std::list<GameObject*> objects = safelyGetGameObjectsFromLayer(objMapIter->first);
 			std::list<GameObject*>::iterator iter = objects.begin();
 			while (iter != objects.end()) {
 				GameObject* obj = *iter;
