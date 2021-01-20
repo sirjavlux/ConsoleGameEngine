@@ -152,7 +152,7 @@ byte* getColorValues(byte*& byteImage, const int colorLoc) {
 	return color;
 }
 
-void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte*& byteImage, const int scale, const int frameRow) {
+void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte*& byteImage, const int scale, const int frameRow, const int frameSize) {
 	
 	byte* color = getColorValues(byteImage, colorLoc);
 	byte b = color[0];
@@ -167,7 +167,7 @@ void setPixelAtLocation(const int frameLocScaled, const int colorLoc, byte*& byt
 	for (int y2 = 0; y2 < scale; y2++) {
 		for (int x2 = 0; x2 < scale; x2++) {
 			int frameLoc = frameLocScaled + finalYIncrement + finalXIncrement;
-			if (frameLoc < 0) break;
+			if (frameLoc < 0 || frameLoc + 3 > frameSize) break;
 			data[frameLoc] = b; // blue
 			data[frameLoc + 1] = g; // green
 			data[frameLoc + 2] = r; // red
@@ -240,31 +240,32 @@ void calculateImages(std::list<GameObject*>
 				// frame/camera data y axis
 				const int offsetY = objYMin - cameraY;
 				const int yImageMin = (offsetY < 0 ? offsetY * -1 : 0) / scale;
-				const int yImageMax = (objHeight - (objYMax - (cameraY + height) < 0 ? 0 : objYMax - (cameraY + height))) / scale;
+				int yImageMax = (objHeight - (objYMax - (cameraY + height) < 0 ? 0 : objYMax - (cameraY + height))) / scale;
+				yImageMax += yImageMax + 1 > objHeightOriginal ? 0 : 1;
 
 				// frame/camera data x axis
 				const int offsetX = objXMin - cameraX;
 				int xImageMin = (offsetX < 0 ? offsetX * -1 : 0) / scale;
 				const int xImageMax = (objWidth - (objXMax - (cameraX + width) < 0 ? 0 : objXMax - (cameraX + width))) / scale;
 
-				// loop data
-				const int startPixelHeight = (offsetY < 0 ? offsetY * -1 : 0) - yImageMin * scale;
+				// x axis data
 				const int startPixelLenght = ((offsetX < 0 ? offsetX * -1 : 0) - xImageMin * scale) * 3;
-
-				const int yFrameOffset = (offsetY < 0 ? 0 : offsetY) - startPixelHeight;
-				int currentFrameRow = yFrameOffset * frameRow;
-
 				const int xFrameOffset = (offsetX < 0 ? 0 : offsetX) * 3 - startPixelLenght;
 				int frameXIncrement = xFrameOffset;
+
+				// y axis data <----------- fix
+				const int startPixelHeight = (offsetY < 0 ? offsetY * -1 : 0) - yImageMin * scale;
+				const int yFrameOffset = (offsetY < 0 ? 0 : offsetY) - startPixelHeight;
+				int currentFrameRow = yFrameOffset * frameRow;
 
 				// loop trough pixels
 				for (int y = yImageMin; y < yImageMax; y++) {
 					for (int x = xImageMin; x < xImageMax; x++) {
-						int colorLoc = (yImageMax - y - 1) * row + x * 3;
+						int colorLoc = (objHeightOriginal - y - 1) * row + x * 3;
 						int frameLocScaled = currentFrameRow + frameXIncrement;
 
 						// place pixels
-						setPixelAtLocation(frameLocScaled, colorLoc, byteImage, scale, frameRow);
+						setPixelAtLocation(frameLocScaled, colorLoc, byteImage, scale, frameRow, size);
 						frameXIncrement += 3 * scale;
 					}
 					frameXIncrement = xFrameOffset;
