@@ -86,9 +86,12 @@ void setRotatedPixelAtLocation(
 			const int rowLoc = currRow * row;
 			const int colLoc = (xLoc - cameraX) * 3;
 
+			if (colLoc + 3 > row || colLoc < 0) continue;
+			if (currRow < 0) continue;
+
 			int frameLoc = rowLoc + colLoc;
 			
-			if (frameLoc < 0 || frameLoc + 3 > frameSize) break;
+			if (frameLoc < 0 || frameLoc + 3 > frameSize) continue;
 			data[frameLoc] = b; // blue
 			data[frameLoc + 1] = g; // green
 			data[frameLoc + 2] = r; // red
