@@ -59,9 +59,9 @@ byte* getColorValues(byte*& byteImage, const int colorLoc) {
 }
 
 void setRotatedPixelAtLocation(
-	const int colorLoc, byte*& byteImage, const int scale, const double rotation
-	, const double xPixLoc, const double yPixLoc, const double rotationOriginX, const double rotationOriginY
-	, const int row, const int cameraX, const int cameraY, const int frameSize) {
+	const int colorLoc, byte*& byteImage, const int scale, const double rotation,
+	const double xPixLoc, const double yPixLoc, const double rotationOriginX, const double rotationOriginY,
+	const int row, const int cameraX, const int cameraY, const int frameSize, const double cs, const double ss) {
 
 	byte* color = getColorValues(byteImage, colorLoc);
 	byte b = color[0];
@@ -71,23 +71,19 @@ void setRotatedPixelAtLocation(
 	if (b == 0 && g == 0 && r == 0) return;
 
 	//calculate location
-	const double radians = (180 - rotation) * M_PI / 180;
-	const double cs = cos(radians);
-	const double ss = sin(radians);
 	const double rotationY = (xPixLoc - rotationOriginX) * cs + (yPixLoc - rotationOriginY) * ss;
 	const double rotationX = (xPixLoc - rotationOriginX) * ss - (yPixLoc - rotationOriginY) * cs;
+	int yLoc = ((int)rotationOriginY - cameraY) * row;
+	int xLoc = ((int)rotationOriginX - cameraX) * 3;
 
 	// place pixel
 	for (int i3 = 0; i3 < scale; i3++) {
 		for (int i4 = 0; i4 < scale; i4++) {
-			const int yLoc = (int)rotationOriginY + (int)round(i4 * cs + i3 * ss + rotationY);
-			const int xLoc = (int)rotationOriginX + (int)round(i4 * ss - i3 * cs + rotationX);
-			const int currRow = yLoc - cameraY;
-			const int rowLoc = currRow * row;
-			const int colLoc = (xLoc - cameraX) * 3;
+			const int rowLoc = yLoc + ((int)round(i4 * cs + i3 * ss + rotationY)) * row;
+			const int colLoc = xLoc + ((int)round(i4 * ss - i3 * cs + rotationX)) * 3;
 
 			if (colLoc + 3 > row || colLoc < 0) continue;
-			if (currRow < 0) continue;
+			if (rowLoc < 0) continue;
 
 			int frameLoc = rowLoc + colLoc;
 			
@@ -175,14 +171,18 @@ void calculateImages(std::list<GameObject*>
 			const int objYMin = obj->getY(); int objYMax = objYMin + objHeight;
 			const int row = objWidth / 10 * 3;
 			const int imageSize = objHeightOriginal * objWidthOriginal * 3;
-			const double rotationOriginX = (double)objXMin + (double)objWidth / 2.0;
-			const double rotationOriginY = (double)objYMin + (double)objHeight / 2.0;
 
 			/*////////////////////
 			* IF ROTATION
 			*/////////////////////
 
 			if (rotation != 0) {
+				const double rotationOriginX = (double)objXMin + (double)objWidth / 2.0;
+				const double rotationOriginY = (double)objYMin + (double)objHeight / 2.0;
+				const double radians = (180 - rotation) * M_PI / 180;
+				const double cs = cos(radians);
+				const double ss = sin(radians);
+
 				// loop trough pixels
 				for (int y = 0; y < objHeightOriginal; y++) {
 					for (int x = 0; x < objWidthOriginal; x++) {
@@ -191,7 +191,7 @@ void calculateImages(std::list<GameObject*>
 						int yPixLoc = objYMin + y * scale;
 
 						// place pixels
-						setRotatedPixelAtLocation(colorLoc, byteImage, scale, rotation, xPixLoc, yPixLoc, rotationOriginX, rotationOriginY, frameRow, cameraX, cameraY, size);
+						setRotatedPixelAtLocation(colorLoc, byteImage, scale, rotation, xPixLoc, yPixLoc, rotationOriginX, rotationOriginY, frameRow, cameraX, cameraY, size, cs, ss);
 					}
 				}
 			}
