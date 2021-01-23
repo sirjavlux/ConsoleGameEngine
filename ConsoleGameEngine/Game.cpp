@@ -52,7 +52,7 @@ void onEnable(SEngine* engine) {
 	Colider2D * shipColider = new Colider2D();
 	shipColider->createTriangles(shipImage, 1, engine);
 	ship->set2DColider(shipColider);
-	registerGameObject(ship, scene);
+	engine->registerGameObject(ship, scene);
 
 	//set camera to follow this object
 	engine->setCameraFollow(ship);
@@ -87,7 +87,7 @@ void onEnable(SEngine* engine) {
 
 		GameObject* smallStar = new GameObject(x, y, 1, stm.str(), engine->getPixelScale());
 		smallStar->updateImage(smallStarImage);
-		registerGameObject(smallStar, scene);
+		engine->registerGameObject(smallStar, scene);
 	}
 
 	//medium stars
@@ -106,7 +106,7 @@ void onEnable(SEngine* engine) {
 
 		GameObject* mediumStar = new GameObject(x, y, 1, stm.str(), engine->getPixelScale());
 		mediumStar->updateImage(mediumStarImage);
-		registerGameObject(mediumStar, scene);
+		engine->registerGameObject(mediumStar, scene);
 	}
 
 	//large stars
@@ -127,7 +127,7 @@ void onEnable(SEngine* engine) {
 
 		GameObject* largeStar = new GameObject(x, y, 1, stm.str(), engine->getPixelScale());
 		largeStar->updateImage(largeStarImage);
-		registerGameObject(largeStar, scene);
+		engine->registerGameObject(largeStar, scene);
 	}
 
 	/*//////////////////////
@@ -144,7 +144,7 @@ void onEnable(SEngine* engine) {
 		GameObject* performance = new GameObject(-90, -50, 0, stm.str(), engine->getPixelScale());
 		performance->updateImage(performanceImage);
 		performance->setRotation(0);
-		registerGameObject(performance, scene);
+		engine->registerGameObject(performance, scene);
 	}
 }
 

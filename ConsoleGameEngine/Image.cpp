@@ -13,7 +13,7 @@ Image::Image(ImageColorMap * colorMap) {
 }
 Image::Image() {
 	image = new vector< vector<DrawPixel*>* >();
-	cMap = &ImageColorMap();
+	cMap = new ImageColorMap();
 	byteImage = { };
 }
 //set line

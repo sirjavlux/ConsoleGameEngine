@@ -21,6 +21,7 @@
 //classes
 class GameObject;
 class SEngine;
+class Scene;
 
 /*///////////////////////////
 * IMAGE
@@ -101,6 +102,8 @@ private:
 	std::thread* frames;
 	std::thread* draw;
 	std::thread* physics;
+	std::map<std::string, GameObject*>* objectMap;
+	std::mutex getObjectMutex;
 	bool running;
 	int tickSpeed;
 	int cameraX, cameraY, cameraFollowOffsetX, cameraFollowOffsetY;
@@ -110,6 +113,9 @@ private:
 	HDC mydc;
 	bool started;
 public:
+	GameObject* getGameObject(std::string name);
+	void removeGameObject(GameObject* obj);
+	void registerGameObject(GameObject* obj, Scene* scene);
 	void startGame();
 	void updateCamera();
 	void setName(std::string name);
@@ -194,10 +200,6 @@ public:
 	double getMaxVelocity();
 };
 
-void removeGameObject(GameObject* obj);
-GameObject* getGameObject(std::string name);
-GameObject* getUnsecureGameObject(std::string name);
-
 /*///////////////////////////
 * SCENE CLASS AND FUNCTIONS
 *////////////////////////////
@@ -230,7 +232,6 @@ Scene* getActiveScene();
 void setActiveStartScene(Scene* scene);
 void setActiveStartScene(SEngine* engine, std::string name);
 Scene* getActiveStartScene();
-void registerGameObject(GameObject* obj, Scene* scene); // GameObject function
 
 /*///////////////////////////
 * FRAME FUNCTIONS

@@ -4,38 +4,6 @@
 * GAMEOBJECTS NEEDS TO BE ALLOCATED IN HEAP MEMORY, USING NEW
 *///////////////////////////////////////////////////////////////
 
-std::map<std::string, GameObject*> * objectMap = new std::map<std::string, GameObject*>();
-
-std::mutex getObjectMutex;
-GameObject * getGameObject(std::string name) {
-	std::lock_guard<std::mutex> lock(getObjectMutex);
-	std::map<std::string, GameObject*>::iterator iter = objectMap->find(name);
-	if (iter != objectMap->end()) return objectMap->at(name);
-	else return nullptr;
-}
-
-GameObject * getUnsecureGameObject(std::string name) {
-	std::lock_guard<std::mutex> lock(getObjectMutex);
-	return objectMap->find(name) == objectMap->end() ? &GameObject() : objectMap->at(name);
-}
-
-void removeGameObject(GameObject * obj) {
-	std::lock_guard<std::mutex> lock(getObjectMutex);
-	objectMap->erase(obj->getName());
-}
-
-void registerGameObject(GameObject* obj, Scene* scene) {
-	std::lock_guard<std::mutex> lock(getObjectMutex);
-	std::string n = obj->getName();
-	int x = obj->getX();
-	int y = obj->getY();
-	int h = obj->getHeight();
-	int w = obj->getWidth();
-
-	objectMap->insert(std::pair<std::string, GameObject *> (n, obj));
-	scene->addGameObject(*obj);
-}
-
 //GameObject constructor
 GameObject::GameObject(int xLoc, int yLoc, int layer, std::string n, Image * newImage, int scale) {
 	chunks = new std::list<Chunk*>();

@@ -49,6 +49,33 @@ void startCoreLoop(SEngine* engine) {
 	}
 }
 
+/*/////////////////////////
+* GAME OBJECTS
+*//////////////////////////
+
+GameObject* SEngine::getGameObject(std::string name) {
+	std::lock_guard<std::mutex> lock(getObjectMutex);
+	std::map<std::string, GameObject*>::iterator iter = objectMap->find(name);
+	if (iter != objectMap->end()) return objectMap->at(name);
+	else return nullptr;
+}
+
+void SEngine::removeGameObject(GameObject* obj) {
+	std::lock_guard<std::mutex> lock(getObjectMutex);
+	objectMap->erase(obj->getName());
+}
+
+void SEngine::registerGameObject(GameObject* obj, Scene* scene) {
+	std::lock_guard<std::mutex> lock(getObjectMutex);
+	std::string n = obj->getName();
+	int x = obj->getX();
+	int y = obj->getY();
+	int h = obj->getHeight();
+	int w = obj->getWidth();
+
+	objectMap->insert(std::pair<std::string, GameObject*>(n, obj));
+	scene->addGameObject(*obj);
+}
 /*///////////////////////////////
 * MANAGE TICKSPEEDS
 *////////////////////////////////
@@ -63,6 +90,7 @@ void SEngine::setTickSpeed(int amount) {
 *////////////////////////////////
 SEngine::SEngine() {
 	//set up variables
+	objectMap = new std::map<std::string, GameObject*>();
 	SEngine::pixelScale = 10;
 	running = true;
 	tickSpeed = 30;

@@ -9,8 +9,18 @@ std::map<int, std::list<GameObject*>*> objectsInFrame;
 
 std::string textBox = "";
 
+std::mutex chunksInFrameMutex, chunksCloseToFrameMutex, objectsMutex, chunksMutex;
+
+// safely clear old objects
+void safeClear() {
+	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
+	chunksInFrame.clear();
+
+	std::lock_guard<std::mutex> lock2(chunksMutex);
+	chunks.clear();
+}
+
 //update scene objects
-void safeClear();
 void updateFrameObjects(SEngine* engine) {
 
 	safeClear();
@@ -23,7 +33,7 @@ void updateFrameObjects(SEngine* engine) {
 		std::vector<std::string>::iterator iter = objects.begin();
 
 		while (iter != objects.end()) {
-			GameObject* obj = getGameObject(*iter);
+			GameObject* obj = engine->getGameObject(*iter);
 			registerObjectToFrame(engine, obj);
 			iter++;
 		}
@@ -61,7 +71,6 @@ void registerObjectToFrame(SEngine* engine, GameObject* obj) {
 }
 
 // modify / get chunks in frame safely
-std::mutex chunksInFrameMutex, chunksCloseToFrameMutex, objectsMutex, chunksMutex;
 
 // Close to frame chunks
 std::list<Chunk*> safelyGetChunksCloseToFrame() {
@@ -136,15 +145,6 @@ std::list<GameObject*> safelyGetGameObjectsFromLayer(int layer) {
 	std::list<GameObject*>* list = objectsInFrame[layer];
 	if (list == nullptr) return std::list<GameObject*>();
 	return *list;
-}
-
-// safely clear old objects
-void safeClear() {
-	std::lock_guard<std::mutex> lock(chunksInFrameMutex);
-	chunksInFrame.clear();
-
-	std::lock_guard<std::mutex> lock2(chunksMutex);
-	chunks.clear();
 }
 
 //update in frame chunks
