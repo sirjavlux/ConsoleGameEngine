@@ -56,30 +56,8 @@ void Image::createByteImage(SEngine * engine) {
 			int loc = y * row + x * 3;
 
 			byteImage[loc] = blue;
-			byteImage[(int)(loc + 1)] = green;
-			byteImage[(int)(loc + 2)] = red;
-
-			/*
-			int xOffset = x * scale * 3 + 3;
-			int xIncrement = xOffset;
-
-			currentRow = y * scale * row;
-
-			//loop trough scaled
-			for (int yS = 0; yS < scale; yS++) {
-				for (int xS = 0; xS < scale; xS++) {
-					int loc = currentRow + xIncrement;
-
-					byteImage[loc] = blue;
-					byteImage[(int)(loc + 1)] = green;
-					byteImage[(int)(loc + 2)] = red;
-
-					xIncrement += 3;
-				}
-				xIncrement = xOffset;
-				currentRow += row;
-			}
-			*/
+			byteImage[(int)(loc) + (int)1] = green;
+			byteImage[(int)(loc) + (int)2] = red;
 		}
 	}
 }

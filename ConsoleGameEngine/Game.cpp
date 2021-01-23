@@ -49,6 +49,9 @@ void onEnable(SEngine* engine) {
 	ship->updateImage(shipImage);
 	ship->setRotation(0);
 	ship->setMaxVelocity(20);
+	Colider2D * shipColider = new Colider2D();
+	shipColider->createTriangles(shipImage, 1, engine);
+	ship->set2DColider(shipColider);
 	registerGameObject(ship, scene);
 
 	//set camera to follow this object

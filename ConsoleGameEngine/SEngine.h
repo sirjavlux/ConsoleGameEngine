@@ -72,9 +72,23 @@ public:
 	Vector2D* getVelocity();
 };
 
+struct Triangle {
+private:
+	std::pair<int, int> * locations;
+public:
+	Triangle();
+	Triangle(int x1, int y1, int x2, int y2, int x3, int y3);
+	void setLocation(int locNr, int x, int y);
+	std::pair<int, int>* getTriangleLocations();
+};
+
 class Colider2D {
 private:
+	Triangle* triangles;
+
 public:
+	Colider2D();
+	void createTriangles(Image* image, double intensity, SEngine* engine);
 };
 
 /*///////////////////////////
@@ -152,12 +166,15 @@ private:
 	std::list<Chunk*>* chunks;
 	std::string name;
 	Image* image;
+	Colider2D* colider;
 public:
 	GameObject(int xLoc, int yLoc, int layer, std::string n, Image* image, int scale);
 	GameObject(int xLoc, int yLoc, int layer, std::string n, int scale);
 	GameObject(std::string n);
 	GameObject();
 	~GameObject();
+	void set2DColider(Colider2D* col);
+	Colider2D * get2DColider();
 	void addChunkAddress(Chunk* chunk);
 	void updateObjectChunks(SEngine* engine);
 	void teleport(int xLoc, int yLoc);

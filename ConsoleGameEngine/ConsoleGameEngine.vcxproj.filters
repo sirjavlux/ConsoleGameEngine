@@ -87,6 +87,9 @@
     <ClCompile Include="DrawPixel.cpp">
       <Filter>InGame</Filter>
     </ClCompile>
+    <ClCompile Include="Triangle.cpp">
+      <Filter>Physics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils.h">

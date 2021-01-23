@@ -46,6 +46,7 @@ GameObject::GameObject(int xLoc, int yLoc, int layer, std::string n, Image * new
 	degrees = 0;
 	maxVelocity = 0;
 	updateImage(newImage);
+	colider = nullptr;
 }
 GameObject::GameObject(int xLoc, int yLoc, int layer, std::string n, int scale) {
 	chunks = new std::list<Chunk*>();
@@ -57,6 +58,7 @@ GameObject::GameObject(int xLoc, int yLoc, int layer, std::string n, int scale) 
 	degrees = 0;
 	maxVelocity = 0;
 	name = n;
+	colider = nullptr;
 }
 GameObject::GameObject(std::string n) {
 	chunks = new std::list<Chunk*>();
@@ -68,6 +70,7 @@ GameObject::GameObject(std::string n) {
 	degrees = 0;
 	maxVelocity = 0;
 	name = n;
+	colider = nullptr;
 }
 GameObject::GameObject() {
 	chunks = new std::list<Chunk*>();
@@ -79,6 +82,14 @@ GameObject::GameObject() {
 	degrees = 0;
 	maxVelocity = 0;
 	name = "";
+	colider = nullptr;
+}
+//Colider
+void GameObject::set2DColider(Colider2D* col) {
+	colider = col;
+}
+Colider2D * GameObject::get2DColider() {
+	return colider;
 }
 //update object chunks
 void GameObject::updateObjectChunks(SEngine * engine) {
